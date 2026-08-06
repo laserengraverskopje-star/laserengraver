@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laser Engraver Admin</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+display:flex;
+background:#f4f4f4;
+}
+
+.sidebar{
+width:240px;
+background:#111827;
+height:100vh;
+color:white;
+padding:20px;
+}
+
+.sidebar h2{
+margin-bottom:30px;
+color:#ff7a00;
+}
+
+.sidebar a{
+display:block;
+color:white;
+text-decoration:none;
+padding:12px;
+border-radius:8px;
+margin-bottom:10px;
+}
+
+.sidebar a:hover{
+background:#1f2937;
+}
+
+.main{
+flex:1;
+padding:40px;
+}
+
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:20px;
+margin-top:25px;
+}
+
+.card{
+background:white;
+padding:25px;
+border-radius:10px;
+box-shadow:0 5px 15px rgba(0,0,0,.1);
+}
+
+.card h3{
+margin-bottom:10px;
+}
+
+.card span{
+font-size:28px;
+font-weight:bold;
+color:#ff7a00;
+}
+
+.logout{
+margin-top:40px;
+background:#ff7a00;
+border:none;
+padding:12px;
+width:100%;
+color:white;
+cursor:pointer;
+border-radius:8px;
+font-size:16px;
+}
+
+.logout:hover{
+background:#ff9300;
+}
+</style>
+
+</head>
+<body>
+
+<div class="sidebar">
+
+<h2>Laser Admin</h2>
+
+<a href="#">🏠 Dashboard</a>
+
+<a href="#">🖼 Галерија</a>
+
+<a href="offers.html">📦 Понуди</a>
+
+<a href="#">📨 Контакт пораки</a>
+
+<a href="#">⚙️ Поставки</a>
+
+<button class="logout" onclick="logout()">Logout</button>
+
+</div>
+
+<div class="main">
+
+<h1>Добредојде!</h1>
+
+<p>Laser Engraver Control Panel</p>
+
+<div class="cards">
+
+<div class="card">
+<h3>Вкупно слики</h3>
+<span>36</span>
+</div>
+
+<div class="card">
+<h3>Пораки</h3>
+<span>0</span>
+</div>
+
+<div class="card">
+<h3>Понуди</h3>
+<span>12</span>
+</div>
+
+<div class="card">
+<h3>Статус</h3>
+<span>Online</span>
+</div>
+
+</div>
+
+</div>
+
+<script>
+function logout(){
+window.location.href="login.html";
+}
+</script>
+
+<script src="js/login.js"></script>
+</body>
+</html>
