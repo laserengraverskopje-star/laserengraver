@@ -191,7 +191,25 @@
   function closeProductModal() { modal.classList.remove('active'); modal.setAttribute('aria-hidden','true'); }
   function openLightbox(src) { lightboxImg.src = src; lightbox.style.display='flex'; }
   function closeLightboxModal() { lightbox.style.display='none'; }
+  function getImageUrl(path) {
+  path = String(path || '').trim();
 
+  if (!path) return '';
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  if (path.startsWith('r2/')) {
+    return 'https://images.laserengraver.mk/' + path.substring(3);
+  }
+
+  if (path.startsWith('images/')) {
+    return '/' + path;
+  }
+
+  return '/images/' + path;
+}
   function renderGallery(container, galleryKey) {
     const files = defaults[galleryKey] || [];
     const prefix = galleryKey === 'gallery2' ? 'images/galerija 2/' : 'images/galerija 1/';
