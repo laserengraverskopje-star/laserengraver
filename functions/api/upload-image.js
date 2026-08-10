@@ -2,8 +2,10 @@ export async function onRequestPost(context) {
   try {
     const formData = await context.request.formData();
 
-    const file = formData.get('file');
-    const token = formData.get('token');
+    const file = formData.get('image');
+
+const authHeader = context.request.headers.get('Authorization') || '';
+const token = authHeader.replace(/^Bearer\s+/i, '');
 
     if (!file || typeof file === 'string') {
       return Response.json(
