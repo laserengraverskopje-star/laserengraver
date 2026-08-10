@@ -260,7 +260,7 @@ function getImageUrl(path) {
         return path;
     }
 
-    return '../' + path;
+    return 'https://images.laserengraver.mk/' + path;
 }
 function previewImage(dom) {
     const path = document.getElementById(`image-${dom}`).value;
