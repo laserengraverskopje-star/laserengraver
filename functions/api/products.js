@@ -53,12 +53,45 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   try {
-    const body = await context.request.json();
-    const { username, password, slot_id, gallery, slot, image_path, category = '', name = '', price = '', description = '' } = body;
+   const body = await context.request.json();
 
-    if (username !== 'sharkylive' || password !== 'SharkyLive@50') {
-      return Response.json({ success: false, error: 'Неовластен пристап.' }, { status: 401 });
-    }
+const {
+  token,
+  slot_id,
+  gallery,
+  slot,
+  image_path,
+  category = '',
+  name = '',
+  price = '',
+  description = ''
+} = body;
+
+if (!token) {
+  return Response.json(
+    { success: false, error: 'Неовластен пристап.' },
+    { status: 401 }
+  );
+}
+
+const ADMIN_USERNAME = context.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = context.env.ADMIN_PASSWORD;
+
+if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+  return Response.json(
+    { success: false, error: 'Admin credentials are not configured.' },
+    { status: 500 }
+  );
+}
+
+const expectedToken = btoa(`${ADMIN_USERNAME}:${ADMIN_PASSWORD}`);
+
+if (token !== expectedToken) {
+  return Response.json(
+    { success: false, error: 'Неовластен пристап.' },
+    { status: 401 }
+  );
+}
     if (!slot_id || !gallery || !slot || !image_path) {
       return Response.json({ success: false, error: 'Недостасуваат податоци за производот.' }, { status: 400 });
     }

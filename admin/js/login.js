@@ -1,22 +1,51 @@
-const USERNAME="sharkylive";
-const PASSWORD="SharkyLive@50";
-if(location.pathname.endsWith("dashboard.html")){
- if(sessionStorage.getItem("adminLogged")!=="true"){
-   location.href="login.html";
- }
+async function login() {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+  const error = document.getElementById("error");
+
+  error.textContent = "";
+
+  try {
+    const response = await fetch("../api/admin-login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        username,
+        password
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success && data.token) {
+      sessionStorage.setItem("adminLogged", "true");
+      sessionStorage.setItem("adminToken", data.token);
+
+      location.href = "dashboard.html";
+    } else {
+      error.textContent =
+        data.error || "Погрешно корисничко име или лозинка.";
+    }
+
+  } catch (err) {
+    console.error(err);
+    error.textContent = "Грешка при поврзување со серверот.";
+  }
 }
-function login(){
- const u=document.getElementById("username").value.trim();
- const p=document.getElementById("password").value;
- const e=document.getElementById("error");
- if(u===USERNAME && p===PASSWORD){
-   sessionStorage.setItem("adminLogged","true");
-   location.href="dashboard.html";
- } else {
-   e.textContent="Погрешно корисничко име или лозинка.";
- }
+
+function logout() {
+  sessionStorage.removeItem("adminLogged");
+  sessionStorage.removeItem("adminToken");
+  location.href = "login.html";
 }
-function logout(){
- sessionStorage.removeItem("adminLogged");
- location.href="login.html";
+
+if (location.pathname.endsWith("dashboard.html")) {
+  if (
+    sessionStorage.getItem("adminLogged") !== "true" ||
+    !sessionStorage.getItem("adminToken")
+  ) {
+    location.href = "login.html";
+  }
 }

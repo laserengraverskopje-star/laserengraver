@@ -247,47 +247,72 @@ function previewImage(dom){
 }
 window.previewImage = previewImage;
 
-async function saveProduct(dom, id, gallery, slot){
+async function saveProduct(dom, id, gallery, slot) {
   const status = document.getElementById(`status-${dom}`);
+
   status.textContent = 'Зачувување...';
   status.className = 'status';
-  try{
-    const imagePath = document.getElementById(`image-${dom}`).value;
+
+  try {
+    const token = sessionStorage.getItem('adminToken');
+
+    if (!token) {
+      throw new Error('Сесијата е истечена. Најави се повторно.');
+    }
+
+    const imagePath = document.getElementById(`image-${dom}`).value.trim();
+
     const res = await fetch('/api/products', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
-        username: ADMIN_USERNAME,
-        password: ADMIN_PASSWORD,
-        slot_id:id,
+        token,
+        slot_id: id,
         gallery,
         slot,
-        image_path:imagePath,
-        category:document.getElementById(`category-${dom}`).value.trim(),
-        name:document.getElementById(`name-${dom}`).value.trim(),
-        price:document.getElementById(`price-${dom}`).value.trim(),
-        description:document.getElementById(`desc-${dom}`).value.trim()
+        image_path: imagePath,
+        category: document.getElementById(`category-${dom}`).value.trim(),
+        name: document.getElementById(`name-${dom}`).value.trim(),
+        price: document.getElementById(`price-${dom}`).value.trim(),
+        description: document.getElementById(`desc-${dom}`).value.trim()
       })
     });
+
     const data = await res.json();
-    if(!res.ok || !data.success) throw new Error(data.error || 'Грешка при зачувување.');
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Грешка при зачувување.');
+    }
+
     const existing = getRow(id);
+
     const updated = {
       ...existing,
-      slot_id:id, gallery, slot, image_path:imagePath,
-      category:document.getElementById(`category-${dom}`).value.trim(),
-      name:document.getElementById(`name-${dom}`).value.trim(),
-      price:document.getElementById(`price-${dom}`).value.trim(),
-      description:document.getElementById(`desc-${dom}`).value.trim()
+      slot_id: id,
+      gallery,
+      slot,
+      image_path: imagePath,
+      category: document.getElementById(`category-${dom}`).value.trim(),
+      name: document.getElementById(`name-${dom}`).value.trim(),
+      price: document.getElementById(`price-${dom}`).value.trim(),
+      description: document.getElementById(`desc-${dom}`).value.trim()
     };
+
     catalogRows = catalogRows.filter(r => r.slot_id !== id);
     catalogRows.push(updated);
+
     document.getElementById(`preview-${dom}`).src = '../' + imagePath;
-    status.textContent='✓ Зачувано';
-    status.className='status saved';
-  }catch(err){
-    status.textContent='✗ '+err.message;
-    status.className='status error';
+
+    status.textContent = '✓ Зачувано';
+    status.className = 'status saved';
+
+  } catch (err) {
+    console.error(err);
+
+    status.textContent = '✕ ' + err.message;
+    status.className = 'status error';
   }
 }
 window.saveProduct = saveProduct;
