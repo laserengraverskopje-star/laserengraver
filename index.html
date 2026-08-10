@@ -199,9 +199,9 @@
       const slot = galleryKey === 'gallery2' ? Number((file.match(/\d+/)||['0'])[0]) : Number((file.match(/\d+/)||['0'])[0]);
       const slotId = 'g' + (galleryKey === 'gallery2' ? '2' : '1') + '-' + slot;
       const p = catalog[slotId] || {};
-      const imagePath = p.image_path || (prefix + file);
+      const imageUrl = getImageUrl(p.image_path || (prefix + file));
       return `<div class="gallery-item" data-slot-id="${slotId}">
-        <img src="${esc(imagePath)}" loading="lazy" alt="${esc(p.name || 'Производ')}" data-lightbox-src="${esc(imagePath)}">
+        <img src="${esc(imageUrl)}" loading="lazy" alt="${esc(p.name || 'Производ')}" data-lightbox-src="${esc(imagePath)}">
         <button type="button" class="price-tab" data-slot-id="${slotId}" data-fallback-image="${esc(imagePath)}">CENA</button>
       </div>`;
     }).join('');
