@@ -84,7 +84,7 @@ const token = authHeader.replace(/^Bearer\s+/i, '');
 
     return Response.json({
       success: true,
-      image_path: `r2/${uniqueName}`,
+      image_path: `https://images.laserengraver.mk/${uniqueName}`,
       filename: uniqueName
     });
 

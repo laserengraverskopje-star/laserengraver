@@ -217,7 +217,7 @@ function render(){
     const dom = `${currentGallery}-${slot.slot}`;
     return `
       <article class="product" data-dom="${dom}">
-        <img id="preview-${dom}" src="../${escapeAttr(imagePath)}" alt="${escapeAttr(name || 'Производ')}" loading="lazy">
+        <img id="preview-${dom}" src="${escapeAttr(imagePath)}" alt="${escapeAttr(name || 'Производ')}" loading="lazy">
         <div class="slot">Позиција: ${currentGallery === 'gallery2' ? 'Галерија 2' : 'Галерија 1'} / ${slot.slot}</div>
         <label>Слика</label>
         <select id="image-${dom}" onchange="previewImage('${dom}')">${optionsForGallery(currentGallery, imagePath)}</select>
@@ -249,7 +249,7 @@ function render(){
 
 function previewImage(dom){
   const path = document.getElementById(`image-${dom}`).value;
-  document.getElementById(`preview-${dom}`).src = '../' + path;
+  document.getElementById(`preview-${dom}`).src = path;
 }
 window.previewImage = previewImage;
 async function uploadProductImage(dom) {
