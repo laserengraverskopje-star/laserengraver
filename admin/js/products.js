@@ -208,6 +208,7 @@ function render(){
   container.innerHTML = slots.map((slot, index) => {
     const p = getRow(slot.slotId);
     const imagePath = p.image_path || slot.defaultPath;
+    const imageUrl = getImageUrl(imagePath);
     const category = p.category || '';
     const name = p.name || '';
     const price = p.price || '';
@@ -217,7 +218,7 @@ function render(){
     const dom = `${currentGallery}-${slot.slot}`;
     return `
       <article class="product" data-dom="${dom}">
-        <img id="preview-${dom}" src="${escapeAttr(imagePath)}" alt="${escapeAttr(name || 'Производ')}" loading="lazy">
+        <img id="preview-${dom}" src="${escapeAttr(imageUrl)}" alt="${escapeAttr(name || 'Производ')}" loading="lazy">
         <div class="slot">Позиција: ${currentGallery === 'gallery2' ? 'Галерија 2' : 'Галерија 1'} / ${slot.slot}</div>
         <label>Слика</label>
         <select id="image-${dom}" onchange="previewImage('${dom}')">${optionsForGallery(currentGallery, imagePath)}</select>
@@ -246,10 +247,25 @@ function render(){
       </article>`;
   }).join('');
 }
+function getImageUrl(path) {
+    path = (path || '').trim();
 
-function previewImage(dom){
-  const path = document.getElementById(`image-${dom}`).value;
-  document.getElementById(`preview-${dom}`).src = path;
+    if (!path) return '';
+
+    if (path.startsWith('r2/')) {
+        return 'https://images.laserengraver.mk/' + path.substring(3);
+    }
+
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+    }
+
+    return '../' + path;
+}
+function previewImage(dom) {
+    const path = document.getElementById(`image-${dom}`).value;
+    document.getElementById(`preview-${dom}`).src = getImageUrl(path);
+}
 }
 window.previewImage = previewImage;
 async function uploadProductImage(dom) {
