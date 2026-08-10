@@ -221,6 +221,12 @@ function render(){
         <div class="slot">Позиција: ${currentGallery === 'gallery2' ? 'Галерија 2' : 'Галерија 1'} / ${slot.slot}</div>
         <label>Слика</label>
         <select id="image-${dom}" onchange="previewImage('${dom}')">${optionsForGallery(currentGallery, imagePath)}</select>
+        <input
+    type="file"
+    id="upload-${dom}"
+    accept="image/jpeg,image/png,image/webp"
+    onchange="uploadProductImage('${dom}')"
+>
         <div class="grid-two">
           <div>
             <label>Категорија</label>
@@ -246,6 +252,73 @@ function previewImage(dom){
   document.getElementById(`preview-${dom}`).src = '../' + path;
 }
 window.previewImage = previewImage;
+async function uploadProductImage(dom) {
+    const input = document.getElementById(`upload-${dom}`);
+    const file = input.files[0];
+
+    if (!file) return;
+
+    const status = document.getElementById(`status-${dom}`);
+
+    try {
+        status.textContent = 'Прикачување на сликата...';
+        status.className = 'status';
+
+        const token = sessionStorage.getItem('adminToken');
+
+        if (!token) {
+            throw new Error('Сесијата е истечена. Најави се повторно.');
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const res = await fetch('/api/upload-image', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Грешка при прикачување.');
+        }
+
+        // Го ставаме R2 патот во постоечкиот select
+        const imageSelect = document.getElementById(`image-${dom}`);
+
+        // Додаваме нова опција
+        const option = document.createElement('option');
+        option.value = data.image_path;
+        option.textContent = file.name;
+
+        imageSelect.appendChild(option);
+
+        // Ја избираме новата слика
+        imageSelect.value = data.image_path;
+
+        // Освежи preview
+        previewImage(dom);
+
+        status.textContent = '✓ Сликата е прикачена';
+        status.className = 'status saved';
+
+    } catch (err) {
+        console.error(err);
+
+        status.textContent = '✕ ' + err.message;
+        status.className = 'status error';
+    }
+
+    // Исчисти го input-от за да може повторно
+    // да се избере иста датотека
+    input.value = '';
+}
+
+window.uploadProductImage = uploadProductImage;
 
 async function saveProduct(dom, id, gallery, slot) {
   const status = document.getElementById(`status-${dom}`);
