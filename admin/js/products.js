@@ -266,7 +266,6 @@ function previewImage(dom) {
     const path = document.getElementById(`image-${dom}`).value;
     document.getElementById(`preview-${dom}`).src = getImageUrl(path);
 }
-}
 window.previewImage = previewImage;
 async function uploadProductImage(dom) {
     const input = document.getElementById(`upload-${dom}`);
