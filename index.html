@@ -176,10 +176,19 @@
     return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   }
 
+  function imageUrl(path) {
+    path = String(path || '').trim();
+    if (!path) return '';
+    if (/^https?:\/\//i.test(path)) return path;
+    if (path.startsWith('r2/')) return 'https://images.laserengraver.mk/' + path.substring(3);
+    if (path.startsWith('/')) return path;
+    return '/' + path;
+  }
+
   function openProduct(slotId, fallbackPath) {
     const p = catalog[slotId] || {};
-    const imagePath = p.image_path || fallbackPath;
-    modalImage.src = imagePath;
+    const src = imageUrl(p.image_path || fallbackPath);
+    modalImage.src = src;
     modalImage.alt = p.name || 'Производ';
     modalCategory.textContent = p.category || '';
     modalName.textContent = p.name || 'Производ';
@@ -191,56 +200,88 @@
   function closeProductModal() { modal.classList.remove('active'); modal.setAttribute('aria-hidden','true'); }
   function openLightbox(src) { lightboxImg.src = src; lightbox.style.display='flex'; }
   function closeLightboxModal() { lightbox.style.display='none'; }
-  function getImageUrl(path) {
-  path = String(path || '').trim();
 
-  if (!path) return '';
-
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    return path;
-  }
-
-  if (path.startsWith('r2/')) {
-    return 'https://images.laserengraver.mk/' + path.substring(3);
-  }
-
-  if (path.startsWith('images/')) {
-    return '/' + path;
-  }
-
-  return '/images/' + path;
-}
   function renderGallery(container, galleryKey) {
     const files = defaults[galleryKey] || [];
     const prefix = galleryKey === 'gallery2' ? 'images/galerija 2/' : 'images/galerija 1/';
-    container.innerHTML = files.map((file, index) => {
-      const slot = galleryKey === 'gallery2' ? Number((file.match(/\d+/)||['0'])[0]) : Number((file.match(/\d+/)||['0'])[0]);
-      const slotId = 'g' + (galleryKey === 'gallery2' ? '2' : '1') + '-' + slot;
+    container.innerHTML = files.map(file => {
+      const slot = Number((file.match(/\d+/) || ['0'])[0]);
+      const galleryNumber = galleryKey === 'gallery2' ? '2' : '1';
+      const slotId = 'g' + galleryNumber + '-' + slot;
       const p = catalog[slotId] || {};
-      const imageUrl = getImageUrl(p.image_path || (prefix + file));
+      const fallbackPath = prefix + file;
+      const src = imageUrl(p.image_path || fallbackPath);
       return `<div class="gallery-item" data-slot-id="${slotId}">
-        <img src="${esc(imageUrl)}" loading="lazy" alt="${esc(p.name || 'Производ')}" data-lightbox-src="${esc(imagePath)}">
-        <button type="button" class="price-tab" data-slot-id="${slotId}" data-fallback-image="${esc(imagePath)}">CENA</button>
+        <img src="${esc(src)}" loading="lazy" alt="${esc(p.name || 'Производ')}" data-lightbox-src="${esc(src)}" onerror="this.style.display='none';this.parentElement.classList.add('image-error')">
+        <button type="button" class="price-tab" data-slot-id="${slotId}" data-fallback-image="${esc(src)}">CENA</button>
       </div>`;
     }).join('');
 
     container.querySelectorAll('img[data-lightbox-src]').forEach(img => img.addEventListener('click', () => openLightbox(img.dataset.lightboxSrc)));
     container.querySelectorAll('.price-tab').forEach(btn => btn.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation(); openProduct(btn.dataset.slotId, btn.dataset.fallbackImage);
+      e.preventDefault();
+      e.stopPropagation();
+      openProduct(btn.dataset.slotId, btn.dataset.fallbackImage);
     }));
   }
 
-  fetch('/api/products', {cache:'no-store'})
-    .then(r => r.ok ? r.json() : [])
-    .then(rows => {
-      (rows || []).forEach(p => { catalog[p.slot_id] = p; });
-      renderGallery(gallery1, 'gallery1');
-      renderGallery(gallery2, 'gallery2');
-    })
-    .catch(() => {
-      renderGallery(gallery1, 'gallery1');
-      renderGallery(gallery2, 'gallery2');
-    });
+  // Render the local gallery FIRST. The gallery must not depend on /api/products.
+  renderGallery(gallery1, 'gallery1');
+  renderGallery(gallery2, 'gallery2');
+
+  function imageUrl(path) {
+    path = String(path || '').trim();
+    if (!path) return '';
+    if (/^https?:\/\//i.test(path)) return path;
+    if (path.startsWith('r2/')) return 'https://images.laserengraver.mk/' + path.substring(3);
+    if (path.startsWith('/')) return path;
+    return '/' + path;
+  }
+
+  function openProduct(slotId, fallbackPath) {
+    const p = catalog[slotId] || {};
+    const src = imageUrl(p.image_path || fallbackPath);
+    modalImage.src = src;
+    modalImage.alt = p.name || 'Производ';
+    modalCategory.textContent = p.category || '';
+    modalName.textContent = p.name || 'Производ';
+    modalPrice.textContent = p.price ? 'Цена: ' + p.price : 'Цена: По договор';
+    modalDescription.textContent = p.description || 'За повеќе информации, контактирајте нè.';
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden','false');
+  }
+  function closeProductModal() { modal.classList.remove('active'); modal.setAttribute('aria-hidden','true'); }
+  function openLightbox(src) { lightboxImg.src = src; lightbox.style.display='flex'; }
+  function closeLightboxModal() { lightbox.style.display='none'; }
+
+  function renderGallery(container, galleryKey) {
+    const files = defaults[galleryKey] || [];
+    const prefix = galleryKey === 'gallery2' ? 'images/galerija 2/' : 'images/galerija 1/';
+    container.innerHTML = files.map(file => {
+      const slot = Number((file.match(/\d+/) || ['0'])[0]);
+      const galleryNumber = galleryKey === 'gallery2' ? '2' : '1';
+      const slotId = 'g' + galleryNumber + '-' + slot;
+      const p = catalog[slotId] || {};
+      const fallbackPath = prefix + file;
+      const src = imageUrl(p.image_path || fallbackPath);
+      return `<div class="gallery-item" data-slot-id="${slotId}">
+        <img src="${esc(src)}" loading="lazy" alt="${esc(p.name || 'Производ')}" data-lightbox-src="${esc(src)}" onerror="this.style.display='none';this.parentElement.classList.add('image-error')">
+        <button type="button" class="price-tab" data-slot-id="${slotId}" data-fallback-image="${esc(src)}">CENA</button>
+      </div>`;
+    }).join('');
+
+    container.querySelectorAll('img[data-lightbox-src]').forEach(img => img.addEventListener('click', () => openLightbox(img.dataset.lightboxSrc)));
+    container.querySelectorAll('.price-tab').forEach(btn => btn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      openProduct(btn.dataset.slotId, btn.dataset.fallbackImage);
+    }));
+  }
+
+  // Render the local gallery FIRST. The gallery must not depend on /api/products.
+  renderGallery(gallery1, 'gallery1');
+  renderGallery(gallery2, 'gallery2');
+
 
   closeProduct.addEventListener('click', closeProductModal);
   modal.addEventListener('click', e => { if (e.target === modal) closeProductModal(); });
