@@ -229,31 +229,69 @@ function getRow(slotId){
   return catalogRows.find(r => r.slot_id === slotId) || {};
 }
 
-function getSlots(gallery){
-  const slots = assets[gallery].map(path => {
-    const info = slotFromPath(path);
+function getSlots(gallery) {
+    const slots = assets[gallery].map(path => {
+        const info = slotFromPath(path);
 
-    return {
-      slot: info.slot,
-      defaultPath: path,
-      slotId: slotId(gallery, info.slot)
-    };
-  });
+        return {
+            slot: info.slot,
+            defaultPath: path,
+            slotId: slotId(gallery, info.slot)
+        };
+    });
 
-  const existingNumbers = slots.map(s => s.slot);
-  const maxSlot = existingNumbers.length
-    ? Math.max(...existingNumbers)
-    : 0;
+    // Додади ги и производите што веќе постојат во базата,
+    // а немаат фиксна слика во assets.
+    const catalogSlots = catalogRows
+        .filter(row => {
+            return row &&
+                row.gallery === gallery &&
+                row.slot_id;
+        })
+        .map(row => {
+            const parts = String(row.slot_id).split('-');
+            const slotNumber = Number(parts[parts.length - 1]);
 
-  const nextSlot = maxSlot + 1;
+            return {
+                slot: slotNumber,
+                defaultPath: '',
+                slotId: row.slot_id
+            };
+        })
+        .filter(item => Number.isFinite(item.slot));
 
-  slots.push({
-    slot: nextSlot,
-    defaultPath: '',
-    slotId: slotId(gallery, nextSlot)
-  });
+    // Спои ги фиксните и динамичките производи без дупликати.
+    const existingIds = new Set(slots.map(item => item.slotId));
 
-  return slots;
+    catalogSlots.forEach(item => {
+        if (!existingIds.has(item.slotId)) {
+            slots.push(item);
+            existingIds.add(item.slotId);
+        }
+    });
+
+    // Сортирај ги по реден број.
+    slots.sort((a, b) => a.slot - b.slot);
+
+    // Најди го последниот постоечки slot.
+    const existingNumbers = slots
+        .map(item => Number(item.slot))
+        .filter(Number.isFinite);
+
+    const maxSlot = existingNumbers.length
+        ? Math.max(...existingNumbers)
+        : 0;
+
+    // Секогаш прикажи ЕДЕН следен празен slot.
+    const nextSlot = maxSlot + 1;
+
+    slots.push({
+        slot: nextSlot,
+        defaultPath: '',
+        slotId: slotId(gallery, nextSlot)
+    });
+
+    return slots;
 }
 
 function render(){
