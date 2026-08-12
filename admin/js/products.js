@@ -230,14 +230,30 @@ function getRow(slotId){
 }
 
 function getSlots(gallery){
-  return assets[gallery].map(path => {
+  const slots = assets[gallery].map(path => {
     const info = slotFromPath(path);
+
     return {
       slot: info.slot,
-      defaultPath:path,
-      slotId:slotId(gallery,info.slot)
+      defaultPath: path,
+      slotId: slotId(gallery, info.slot)
     };
   });
+
+  const existingNumbers = slots.map(s => s.slot);
+  const maxSlot = existingNumbers.length
+    ? Math.max(...existingNumbers)
+    : 0;
+
+  const nextSlot = maxSlot + 1;
+
+  slots.push({
+    slot: nextSlot,
+    defaultPath: '',
+    slotId: slotId(gallery, nextSlot)
+  });
+
+  return slots;
 }
 
 function render(){
