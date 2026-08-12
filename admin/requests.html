@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Контакт пораки | Laser Admin</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      color: #111;
+    }
+
+    .header {
+      background: #111827;
+      color: white;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      color: #ff7a00;
+      font-size: 28px;
+    }
+
+    .back {
+      background: #243044;
+      color: white;
+      text-decoration: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+    }
+
+    .container {
+      padding: 30px;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .top h2 {
+      margin: 0;
+    }
+
+    .refresh {
+      background: #ff7a00;
+      color: white;
+      border: 0;
+      padding: 12px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .message {
+      background: white;
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 3px 12px rgba(0,0,0,.08);
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .message-header strong {
+      font-size: 20px;
+    }
+
+    .id {
+      color: #777;
+      font-size: 13px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px 25px;
+    }
+
+    .field {
+      background: #f8f8f8;
+      padding: 12px;
+      border-radius: 7px;
+    }
+
+    .field b {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+      font-size: 13px;
+    }
+
+    .description {
+      margin-top: 12px;
+      background: #f8f8f8;
+      padding: 14px;
+      border-radius: 7px;
+    }
+
+    .empty {
+      background: white;
+      padding: 40px;
+      text-align: center;
+      border-radius: 12px;
+      color: #777;
+    }
+
+    .error {
+      background: #ffe5e5;
+      color: #b00020;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 700px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header {
+        padding: 15px;
+      }
+
+      .container {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>📨 Контакт пораки</h1>
+
+    <a href="dashboard.html" class="back">
+      ← Dashboard
+    </a>
+  </div>
+
+  <div class="container">
+
+    <div class="top">
+      <h2>Примени пораки</h2>
+
+      <button class="refresh" onclick="loadRequests()">
+        🔄 Освежи
+      </button>
+    </div>
+
+    <div id="messages">
+      Се вчитуваат пораките...
+    </div>
+
+  </div>
+
+  <script>
+
+    async function loadRequests() {
+
+      const container = document.getElementById("messages");
+
+      container.innerHTML = "Се вчитуваат пораките...";
+
+      try {
+
+        const response = await fetch("/api/requests");
+
+        if (!response.ok) {
+          throw new Error("Грешка при вчитување на пораките.");
+        }
+
+        const requests = await response.json();
+
+        if (!requests || requests.length === 0) {
+
+          container.innerHTML = `
+            <div class="empty">
+              📭 Нема примени контакт пораки.
+            </div>
+          `;
+
+          return;
+        }
+
+        container.innerHTML = requests.map(request => `
+
+          <div class="message">
+
+            <div class="message-header">
+
+              <strong>
+                ${escapeHtml(request.name || "Без име")}
+              </strong>
+
+              <span class="id">
+                ID: ${escapeHtml(String(request.id ?? ""))}
+              </span>
+
+            </div>
+
+            <div class="grid">
+
+              <div class="field">
+                <b>📧 Email</b>
+                ${escapeHtml(request.email || "-")}
+              </div>
+
+              <div class="field">
+                <b>📞 Телефон</b>
+                ${escapeHtml(request.phone || "-")}
+              </div>
+
+              <div class="field">
+                <b>🛠 Услуга</b>
+                ${escapeHtml(request.service || "-")}
+              </div>
+
+              <div class="field">
+                <b>🪵 Материјал</b>
+                ${escapeHtml(request.material || "-")}
+              </div>
+
+              <div class="field">
+                <b>📐 Димензии</b>
+                ${escapeHtml(request.dimensions || "-")}
+              </div>
+
+            </div>
+
+            <div class="description">
+
+              <b>📝 Опис</b><br><br>
+
+              ${escapeHtml(request.description || "-")}
+
+            </div>
+
+          </div>
+
+        `).join("");
+
+      } catch (error) {
+
+        container.innerHTML = `
+          <div class="error">
+            ❌ ${escapeHtml(error.message)}
+          </div>
+        `;
+
+      }
+
+    }
+
+
+    function escapeHtml(value) {
+
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+    }
+
+
+    loadRequests();
+
+  </script>
+
+</body>
+</html>
