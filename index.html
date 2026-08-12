@@ -619,6 +619,48 @@ if(qb){qb.onclick=e=>{e.preventDefault();qm.style.display='flex';};}
 if(qc){qc.onclick=()=>qm.style.display='none';}
 window.addEventListener('click',e=>{if(e.target===qm)qm.style.display='none';});
 </script>
+<script>
+const quoteForm = document.getElementById('quoteForm');
+
+if (quoteForm) {
+  quoteForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(quoteForm);
+
+    const data = {
+      name: formData.get('name') || '',
+      email: formData.get('email') || '',
+      phone: formData.get('phone') || '',
+      service: formData.get('service') || '',
+      material: formData.get('material') || '',
+      dimensions: formData.get('dimensions') || '',
+      description: formData.get('message') || ''
+    };
+
+    try {
+      const response = await fetch('/api/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error('Грешка при зачувување на барањето.');
+      }
+
+      // Зачувано во D1 → сега продолжи со FormSubmit
+      quoteForm.submit();
+
+    } catch (error) {
+      console.error(error);
+      alert('Настана грешка. Барањето не е зачувано.');
+    }
+  });
+}
+</script>
 
 <audio id="bgMusic" loop preload="auto">
   <source src="music/background.mp3" type="audio/mpeg">
