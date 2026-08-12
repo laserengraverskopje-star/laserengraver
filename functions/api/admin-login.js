@@ -11,7 +11,10 @@ export async function onRequestPost(context) {
 
     const ADMIN_USERNAME = context.env.ADMIN_USERNAME;
     const ADMIN_PASSWORD = context.env.ADMIN_PASSWORD;
-
+    console.log("ADMIN ENV:", {
+    username: !!ADMIN_USERNAME,
+    password: !!ADMIN_PASSWORD
+    });
     if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
       return Response.json(
         {

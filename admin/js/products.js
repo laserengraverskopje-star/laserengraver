@@ -84,6 +84,7 @@ const assets = {
     'images/galerija 1/83.jpg',
     'images/galerija 1/84.jpg',
   ],
+
   gallery2: [
     'images/galerija 2/85.jpg',
     'images/galerija 2/86.jpg',
@@ -176,26 +177,66 @@ let currentGallery = 'gallery1';
 let catalogRows = [];
 
 function escapeHtml(v){
-  return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  return String(v ?? '').replace(/[&<>'"]/g, c => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    "'":'&#39;',
+    '"':'&quot;'
+  }[c]));
 }
-function escapeAttr(v){ return escapeHtml(v); }
-function pathLabel(path){ return path.replace(/^images\//,''); }
+
+function escapeAttr(v){
+  return escapeHtml(v);
+}
+
+function pathLabel(path){
+  return path.replace(/^images\//,'');
+}
+
 function slotFromPath(path){
   const m = String(path).match(/galerija\s*([12])\/(\d+)\./i);
-  return m ? {gallery:m[1] === '2' ? 'gallery2' : 'gallery1', slot:Number(m[2])} : null;
+  return m
+    ? {
+        gallery:m[1] === '2' ? 'gallery2' : 'gallery1',
+        slot:Number(m[2])
+      }
+    : null;
 }
-function slotId(gallery, slot){ return (gallery === 'gallery2' ? 'g2-' : 'g1-') + slot; }
+
+function slotId(gallery, slot){
+  return (gallery === 'gallery2' ? 'g2-' : 'g1-') + slot;
+}
+
 function optionsForGallery(gallery, selected){
-  return assets[gallery].map(path => `<option value="${escapeAttr(path)}" ${path===selected?'selected':''}>${escapeHtml(pathLabel(path))}</option>`).join('');
+  return assets[gallery]
+    .map(path =>
+      `<option value="${escapeAttr(path)}" ${path===selected?'selected':''}>${escapeHtml(pathLabel(path))}</option>`
+    )
+    .join('');
 }
+
 function categoryOptions(selected){
-  return '<option value="">Избери категорија</option>' + categories.map(c => `<option value="${escapeAttr(c)}" ${c===selected?'selected':''}>${escapeHtml(c)}</option>`).join('');
+  return '<option value="">Избери категорија</option>' +
+    categories
+      .map(c =>
+        `<option value="${escapeAttr(c)}" ${c===selected?'selected':''}>${escapeHtml(c)}</option>`
+      )
+      .join('');
 }
-function getRow(slotId){ return catalogRows.find(r => r.slot_id === slotId) || {}; }
+
+function getRow(slotId){
+  return catalogRows.find(r => r.slot_id === slotId) || {};
+}
+
 function getSlots(gallery){
   return assets[gallery].map(path => {
     const info = slotFromPath(path);
-    return {slot: info.slot, defaultPath:path, slotId:slotId(gallery,info.slot)};
+    return {
+      slot: info.slot,
+      defaultPath:path,
+      slotId:slotId(gallery,info.slot)
+    };
   });
 }
 
@@ -213,40 +254,93 @@ function render(){
     const name = p.name || '';
     const price = p.price || '';
     const desc = p.description || '';
-    const haystack = `${pathLabel(imagePath)} ${name} ${category} ${price} ${desc}`.toLowerCase();
+
+    const haystack =
+      `${pathLabel(imagePath)} ${name} ${category} ${price} ${desc}`.toLowerCase();
+
     if ((q && !haystack.includes(q)) || (cat && category !== cat)) return '';
+
     const dom = `${currentGallery}-${slot.slot}`;
+
     return `
       <article class="product" data-dom="${dom}">
-        <img id="preview-${dom}" src="${escapeAttr(imageUrl)}" alt="${escapeAttr(name || 'Производ')}" loading="lazy">
-        <div class="slot">Позиција: ${currentGallery === 'gallery2' ? 'Галерија 2' : 'Галерија 1'} / ${slot.slot}</div>
+        <img
+          id="preview-${dom}"
+          src="${escapeAttr(imageUrl)}"
+          alt="${escapeAttr(name || 'Производ')}"
+          loading="lazy"
+        >
+
+        <div class="slot">
+          Позиција:
+          ${currentGallery === 'gallery2' ? 'Галерија 2' : 'Галерија 1'}
+          / ${slot.slot}
+        </div>
+
         <label>Слика</label>
-        <select id="image-${dom}" onchange="previewImage('${dom}')">${optionsForGallery(currentGallery, imagePath)}</select>
+
+        <select
+          id="image-${dom}"
+          onchange="previewImage('${dom}')"
+        >
+          ${optionsForGallery(currentGallery, imagePath)}
+        </select>
+
         <input
-    type="file"
-    id="upload-${dom}"
-    accept="image/jpeg,image/png,image/webp"
-    onchange="uploadProductImage('${dom}')"
->
+          type="file"
+          id="upload-${dom}"
+          accept="image/jpeg,image/png,image/webp"
+          onchange="uploadProductImage('${dom}')"
+        >
+
         <div class="grid-two">
+
           <div>
             <label>Категорија</label>
-            <select id="category-${dom}">${categoryOptions(category)}</select>
+            <select id="category-${dom}">
+              ${categoryOptions(category)}
+            </select>
           </div>
+
           <div>
             <label>Производ / име</label>
-            <input id="name-${dom}" value="${escapeAttr(name)}" placeholder="Пример: Дрвена плакета">
+            <input
+              id="name-${dom}"
+              value="${escapeAttr(name)}"
+              placeholder="Пример: Дрвена плакета"
+            >
           </div>
+
         </div>
+
         <label>Цена</label>
-        <input id="price-${dom}" value="${escapeAttr(price)}" placeholder="Пример: 500 ден.">
+
+        <input
+          id="price-${dom}"
+          value="${escapeAttr(price)}"
+          placeholder="Пример: 500 ден."
+        >
+
         <label>Опис</label>
-        <textarea id="desc-${dom}" placeholder="Краток опис на производот...">${escapeHtml(desc)}</textarea>
-        <button class="save" onclick="saveProduct('${dom}','${slot.slotId}','${currentGallery}',${slot.slot})">Зачувај</button>
+
+        <textarea
+          id="desc-${dom}"
+          placeholder="Краток опис на производот..."
+        >${escapeHtml(desc)}</textarea>
+
+        <button
+          class="save"
+          onclick="saveProduct('${dom}','${slot.slotId}','${currentGallery}',${slot.slot})"
+        >
+          Зачувај
+        </button>
+
         <div class="status" id="status-${dom}"></div>
+
       </article>`;
   }).join('');
 }
+
 function getImageUrl(path) {
     path = (path || '').trim();
 
@@ -260,169 +354,373 @@ function getImageUrl(path) {
         return path;
     }
 
+    if (path.startsWith('/images/')) {
+        return path;
+    }
+
+    if (path.startsWith('images/')) {
+        return '/' + path;
+    }
+
     return '/images/' + path;
 }
+
 function previewImage(dom) {
     const path = document.getElementById(`image-${dom}`).value;
-    document.getElementById(`preview-${dom}`).src = getImageUrl(path);
+
+    document.getElementById(`preview-${dom}`).src =
+      getImageUrl(path);
 }
+
 window.previewImage = previewImage;
+
 async function uploadProductImage(dom) {
-    const input = document.getElementById(`upload-${dom}`);
-    const file = input.files[0];
+
+    const input =
+      document.getElementById(`upload-${dom}`);
+
+    const file =
+      input.files[0];
 
     if (!file) return;
 
-    const status = document.getElementById(`status-${dom}`);
+    const status =
+      document.getElementById(`status-${dom}`);
 
     try {
-        status.textContent = 'Прикачување на сликата...';
-        status.className = 'status';
 
-        const token = sessionStorage.getItem('adminToken');
+        status.textContent =
+          'Прикачување на сликата...';
+
+        status.className =
+          'status';
+
+        const token =
+          sessionStorage.getItem('adminToken');
 
         if (!token) {
-            throw new Error('Сесијата е истечена. Најави се повторно.');
+            throw new Error(
+              'Сесијата е истечена. Најави се повторно.'
+            );
         }
 
-        const formData = new FormData();
-        formData.append('image', file);
+        const formData =
+          new FormData();
 
-        const res = await fetch('/api/upload-image', {
+        formData.append(
+          'image',
+          file
+        );
+
+        const res =
+          await fetch('/api/upload-image', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization':
+                  `Bearer ${token}`
             },
             body: formData
-        });
+          });
 
-        const data = await res.json();
+        const data =
+          await res.json();
 
         if (!res.ok || !data.success) {
-            throw new Error(data.error || 'Грешка при прикачување.');
+            throw new Error(
+              data.error ||
+              'Грешка при прикачување.'
+            );
         }
 
-        // Го ставаме R2 патот во постоечкиот select
-        const imageSelect = document.getElementById(`image-${dom}`);
+        const imageSelect =
+          document.getElementById(`image-${dom}`);
 
-        // Додаваме нова опција
-        const option = document.createElement('option');
-        option.value = data.image_path;
-        option.textContent = file.name;
+        const option =
+          document.createElement('option');
 
-        imageSelect.appendChild(option);
+        option.value =
+          data.image_path;
 
-        // Ја избираме новата слика
-        imageSelect.value = data.image_path;
+        option.textContent =
+          file.name;
 
-        // Освежи preview
+        imageSelect.appendChild(
+          option
+        );
+
+        imageSelect.value =
+          data.image_path;
+
         previewImage(dom);
 
-        status.textContent = '✓ Сликата е прикачена';
-        status.className = 'status saved';
+        status.textContent =
+          '✓ Сликата е прикачена';
+
+        status.className =
+          'status saved';
 
     } catch (err) {
+
         console.error(err);
 
-        status.textContent = '✕ ' + err.message;
-        status.className = 'status error';
+        status.textContent =
+          '✕ ' + err.message;
+
+        status.className =
+          'status error';
     }
 
-    // Исчисти го input-от за да може повторно
-    // да се избере иста датотека
     input.value = '';
 }
 
-window.uploadProductImage = uploadProductImage;
+window.uploadProductImage =
+  uploadProductImage;
 
 async function saveProduct(dom, id, gallery, slot) {
-  const status = document.getElementById(`status-${dom}`);
 
-  status.textContent = 'Зачувување...';
-  status.className = 'status';
+  const status =
+    document.getElementById(`status-${dom}`);
+
+  status.textContent =
+    'Зачувување...';
+
+  status.className =
+    'status';
 
   try {
-    const token = sessionStorage.getItem('adminToken');
+
+    const token =
+      sessionStorage.getItem('adminToken');
 
     if (!token) {
-      throw new Error('Сесијата е истечена. Најави се повторно.');
+      throw new Error(
+        'Сесијата е истечена. Најави се повторно.'
+      );
     }
 
-    const imagePath = document.getElementById(`image-${dom}`).value.trim();
+    const imagePath =
+      document
+        .getElementById(`image-${dom}`)
+        .value
+        .trim();
 
-    const res = await fetch('/api/products', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        token,
-        slot_id: id,
-        gallery,
-        slot,
-        image_path: imagePath,
-        category: document.getElementById(`category-${dom}`).value.trim(),
-        name: document.getElementById(`name-${dom}`).value.trim(),
-        price: document.getElementById(`price-${dom}`).value.trim(),
-        description: document.getElementById(`desc-${dom}`).value.trim()
-      })
-    });
+    const res =
+      await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type':
+            'application/json'
+        },
+        body: JSON.stringify({
 
-    const data = await res.json();
+          token,
+
+          slot_id: id,
+
+          gallery,
+
+          slot,
+
+          image_path: imagePath,
+
+          category:
+            document
+              .getElementById(`category-${dom}`)
+              .value
+              .trim(),
+
+          name:
+            document
+              .getElementById(`name-${dom}`)
+              .value
+              .trim(),
+
+          price:
+            document
+              .getElementById(`price-${dom}`)
+              .value
+              .trim(),
+
+          description:
+            document
+              .getElementById(`desc-${dom}`)
+              .value
+              .trim()
+        })
+      });
+
+    const data =
+      await res.json();
 
     if (!res.ok || !data.success) {
-      throw new Error(data.error || 'Грешка при зачувување.');
+      throw new Error(
+        data.error ||
+        'Грешка при зачувување.'
+      );
     }
 
-    const existing = getRow(id);
+    const existing =
+      getRow(id);
 
     const updated = {
+
       ...existing,
+
       slot_id: id,
+
       gallery,
+
       slot,
+
       image_path: imagePath,
-      category: document.getElementById(`category-${dom}`).value.trim(),
-      name: document.getElementById(`name-${dom}`).value.trim(),
-      price: document.getElementById(`price-${dom}`).value.trim(),
-      description: document.getElementById(`desc-${dom}`).value.trim()
+
+      category:
+        document
+          .getElementById(`category-${dom}`)
+          .value
+          .trim(),
+
+      name:
+        document
+          .getElementById(`name-${dom}`)
+          .value
+          .trim(),
+
+      price:
+        document
+          .getElementById(`price-${dom}`)
+          .value
+          .trim(),
+
+      description:
+        document
+          .getElementById(`desc-${dom}`)
+          .value
+          .trim()
     };
 
-    catalogRows = catalogRows.filter(r => r.slot_id !== id);
-    catalogRows.push(updated);
+    catalogRows =
+      catalogRows.filter(
+        r => r.slot_id !== id
+      );
 
-    document.getElementById(`preview-${dom}`).src = '../' + imagePath;
+    catalogRows.push(
+      updated
+    );
 
-    status.textContent = '✓ Зачувано';
-    status.className = 'status saved';
+    document.getElementById(
+      `preview-${dom}`
+    ).src =
+      getImageUrl(imagePath);
+
+    status.textContent =
+      '✓ Зачувано';
+
+    status.className =
+      'status saved';
 
   } catch (err) {
+
     console.error(err);
 
-    status.textContent = '✕ ' + err.message;
-    status.className = 'status error';
+    status.textContent =
+      '✕ ' + err.message;
+
+    status.className =
+      'status error';
   }
 }
-window.saveProduct = saveProduct;
+
+window.saveProduct =
+  saveProduct;
 
 function updateCategoryFilter(){
-  const select = document.getElementById('categoryFilter');
-  const selected = select.value;
-  select.innerHTML = '<option value="">Сите категории</option>' + categories.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
-  select.value = selected;
+
+  const select =
+    document.getElementById(
+      'categoryFilter'
+    );
+
+  const selected =
+    select.value;
+
+  select.innerHTML =
+    '<option value="">Сите категории</option>' +
+    categories
+      .map(c =>
+        `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`
+      )
+      .join('');
+
+  select.value =
+    selected;
 }
 
-document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  tab.classList.add('active');
-  currentGallery = tab.dataset.gallery;
-  render();
-}));
-document.getElementById('search').addEventListener('input', render);
-document.getElementById('categoryFilter').addEventListener('change', render);
+document
+  .querySelectorAll('.tab')
+  .forEach(tab =>
+    tab.addEventListener(
+      'click',
+      () => {
+
+        document
+          .querySelectorAll('.tab')
+          .forEach(t =>
+            t.classList.remove('active')
+          );
+
+        tab.classList.add('active');
+
+        currentGallery =
+          tab.dataset.gallery;
+
+        render();
+      }
+    )
+  );
+
+document
+  .getElementById('search')
+  .addEventListener(
+    'input',
+    render
+  );
+
+document
+  .getElementById('categoryFilter')
+  .addEventListener(
+    'change',
+    render
+  );
+
 updateCategoryFilter();
 
-fetch('/api/products', {cache:'no-store'})
-  .then(r => r.ok ? r.json() : [])
-  .then(rows => { catalogRows = rows || []; render(); })
-  .catch(() => { catalogRows = []; render(); });
+fetch(
+  '/api/products',
+  {
+    cache:'no-store'
+  }
+)
+.then(
+  r =>
+    r.ok
+      ? r.json()
+      : []
+)
+.then(
+  rows => {
+
+    catalogRows =
+      rows || [];
+
+    render();
+  }
+)
+.catch(
+  () => {
+
+    catalogRows = [];
+
+    render();
+  }
+);
