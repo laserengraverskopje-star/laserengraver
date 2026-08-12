@@ -1,1 +1,10 @@
 compatibility_date = "2026-08-11"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "laserengraver-images"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "laserengraver-db"
+database_id = "604bd882-215a-49bd-8299-24d3356a9e28"

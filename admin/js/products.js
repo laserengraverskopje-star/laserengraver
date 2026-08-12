@@ -279,12 +279,11 @@ function render(){
 
         <label>Слика</label>
 
-        <select
+        <input
+          type="hidden"
           id="image-${dom}"
-          onchange="previewImage('${dom}')"
+          value="${escapeAttr(imagePath)}"
         >
-          ${optionsForGallery(currentGallery, imagePath)}
-        </select>
 
         <input
           type="file"
@@ -342,27 +341,34 @@ function render(){
 }
 
 function getImageUrl(path) {
-    path = (path || '').trim();
+  path = (path || '').trim();
 
-    if (!path) return '';
+  if (!path) return '';
 
-    if (path.startsWith('r2/')) {
-        return 'https://images.laserengraver.mk/' + path.substring(3);
-    }
+  // R2 image through Pages Function
+  if (path.startsWith('/api/images/')) {
+    return path;
+  }
 
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-        return path;
-    }
+  if (path.startsWith('api/images/')) {
+    return '/' + path;
+  }
 
-    if (path.startsWith('/images/')) {
-        return path;
-    }
+  // Direct full URL
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
 
-    if (path.startsWith('images/')) {
-        return '/' + path;
-    }
+  // Old/local images
+  if (path.startsWith('/images/')) {
+    return path;
+  }
 
-    return '/images/' + path;
+  if (path.startsWith('images/')) {
+    return '/' + path;
+  }
+
+  return '/images/' + path;
 }
 
 function previewImage(dom) {
@@ -432,23 +438,10 @@ async function uploadProductImage(dom) {
             );
         }
 
-        const imageSelect =
+        const imageInput =
           document.getElementById(`image-${dom}`);
 
-        const option =
-          document.createElement('option');
-
-        option.value =
-          data.image_path;
-
-        option.textContent =
-          file.name;
-
-        imageSelect.appendChild(
-          option
-        );
-
-        imageSelect.value =
+        imageInput.value =
           data.image_path;
 
         previewImage(dom);
