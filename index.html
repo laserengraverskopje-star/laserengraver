@@ -271,7 +271,19 @@
   }
 
   function renderGallery(container, galleryKey) {
-    const files = defaults[galleryKey] || [];
+    const files = [
+    ...(defaults[galleryKey] || []),
+    ...Object.keys(catalog)
+        .filter(id =>
+            id.startsWith(
+                galleryKey === 'gallery2' ? 'g2-' : 'g1-'
+            )
+        )
+        .map(id => `${id.split('-')[1]}.jpg`)
+        .filter(file =>
+            !(defaults[galleryKey] || []).includes(file)
+        )
+];
 
     const prefix =
       galleryKey === 'gallery2'
