@@ -276,10 +276,17 @@
     container.innerHTML = files.map(file=>{
       const slot = Number((file.match(/\d+/)||['0'])[0]);
       const slotId = 'g' + number + '-' + slot;
-      const p = catalog[slotId] || {};
-      const src = getImageUrl(p.image_path || (prefix + file));
+      const p = catalog[slotId];
+
+      // If this slot exists in the database and is inactive, do not render
+      // its public card at all. This prevents the default gallery image from
+      // reappearing after the product is hidden in Admin.
+      if (p && Number(p.active) === 0) return '';
+
+      const product = p || {};
+      const src = getImageUrl(product.image_path || (prefix + file));
       return `<div class="gallery-item" data-slot-id="${slotId}">
-        <img src="${esc(src)}" loading="lazy" alt="${esc(p.name || 'Производ')}" data-lightbox-src="${esc(src)}" onerror="this.style.display='none';this.parentElement.classList.add('image-error')">
+        <img src="${esc(src)}" loading="lazy" alt="${esc(product.name || 'Производ')}" data-lightbox-src="${esc(src)}" onerror="this.style.display='none';this.parentElement.classList.add('image-error')">
         <button type="button" class="price-tab" data-slot-id="${slotId}" data-fallback-image="${esc(src)}">CENA</button>
       </div>`;
     }).join('');
@@ -292,7 +299,12 @@
   fetch('/api/products',{cache:'no-store'})
     .then(r=>r.ok ? r.json() : [])
     .then(rows=>{
-      (rows || []).forEach(p=>{ if(p && p.slot_id) catalog[p.slot_id]=p; });
+      // Keep inactive products in the catalog map too.
+      // The public gallery must know that a slot is hidden; otherwise it
+      // falls back to the original static image and the card appears again.
+      (rows || []).forEach(p=>{
+        if(p && p.slot_id) catalog[p.slot_id]=p;
+      });
       renderGallery(gallery1,'gallery1');
       renderGallery(gallery2,'gallery2');
     })

@@ -10,6 +10,7 @@ async function ensureSchema(env) {
       price TEXT DEFAULT '',
       description TEXT DEFAULT '',
       extra_images TEXT DEFAULT '[]',
+      active INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
@@ -19,6 +20,11 @@ async function ensureSchema(env) {
   const hasExtraImages = (columns.results || []).some(c => c.name === 'extra_images');
   if (!hasExtraImages) {
     await env.DB.prepare(`ALTER TABLE catalog_items ADD COLUMN extra_images TEXT DEFAULT '[]'`).run();
+  }
+
+  const hasActive = (columns.results || []).some(c => c.name === 'active');
+  if (!hasActive) {
+    await env.DB.prepare(`ALTER TABLE catalog_items ADD COLUMN active INTEGER NOT NULL DEFAULT 1`).run();
   }
 }
 
@@ -48,7 +54,7 @@ export async function onRequestGet(context) {
     }
 
     const { results } = await context.env.DB.prepare(`
-      SELECT slot_id, gallery, slot, image_path, category, name, price, description, extra_images, updated_at
+      SELECT slot_id, gallery, slot, image_path, category, name, price, description, extra_images, active, updated_at
       FROM catalog_items
       ORDER BY gallery ASC, slot ASC
     `).all();
@@ -120,8 +126,8 @@ if (token !== expectedToken) {
 
     await context.env.DB.prepare(`
       INSERT INTO catalog_items
-        (slot_id, gallery, slot, image_path, category, name, price, description, extra_images, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        (slot_id, gallery, slot, image_path, category, name, price, description, extra_images, active, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
       ON CONFLICT(slot_id) DO UPDATE SET
         gallery = excluded.gallery,
         slot = excluded.slot,
@@ -131,6 +137,7 @@ if (token !== expectedToken) {
         price = excluded.price,
         description = excluded.description,
         extra_images = excluded.extra_images,
+        active = 1,
         updated_at = CURRENT_TIMESTAMP
     `).bind(slot_id, gallery, Number(slot), image_path, category, name, price, description, JSON.stringify(normalizedExtraImages)).run();
 
@@ -180,80 +187,33 @@ export async function onRequestDelete(context) {
 
     await ensureSchema(context.env);
 
-    // Прво ги земаме податоците за артиклот, за да можеме
-    // безбедно да ги избришеме и дополнителните слики од R2.
-    const rowResult = await context.env.DB.prepare(`
-      SELECT image_path, extra_images
-      FROM catalog_items
-      WHERE slot_id = ?
-      LIMIT 1
-    `).bind(slot_id).all();
-
-    const row = (rowResult.results || [])[0] || null;
-
-    await context.env.DB.prepare(`
-      DELETE FROM catalog_items
+    // Ова е СКРИВАЊЕ, не физичко бришење.
+    // Ги задржуваме производот, главната слика и дополнителните слики.
+    const result = await context.env.DB.prepare(`
+      UPDATE catalog_items
+      SET active = 0,
+          updated_at = CURRENT_TIMESTAMP
       WHERE slot_id = ?
     `).bind(slot_id).run();
 
-    // Бришеме само слики што се качени во нашиот R2 bucket.
-    // Фиксните слики од /images/galerija 1 и /images/galerija 2 не ги допираме.
-    const uploadedImages = [];
-
-    if (row) {
-      const mainPath = String(row.image_path || '');
-      if (mainPath.includes('images.laserengraver.mk/')) {
-        uploadedImages.push(mainPath);
-      }
-
-      try {
-        const extras = JSON.parse(String(row.extra_images || '[]'));
-        if (Array.isArray(extras)) {
-          for (const path of extras) {
-            const value = String(path || '');
-            if (value.includes('images.laserengraver.mk/')) {
-              uploadedImages.push(value);
-            }
-          }
-        }
-      } catch (_) {
-        // Ако extra_images е стар/невалиден JSON, продолжи со бришењето на записот.
-      }
-    }
-
-    if (uploadedImages.length && context.env.IMAGES) {
-      const keys = uploadedImages
-        .map(url => {
-          try {
-            const parsed = new URL(url);
-            return decodeURIComponent(parsed.pathname.replace(/^\/+/, ''));
-          } catch (_) {
-            return '';
-          }
-        })
-        .filter(Boolean);
-
-      for (const key of keys) {
-        try {
-          await context.env.IMAGES.delete(key);
-        } catch (_) {
-          // Не го поништувај успешното бришење од DB ако R2 deletion не успее.
-        }
-      }
+    if (!result.meta || result.meta.changes !== 1) {
+      return Response.json(
+        { success: false, error: 'Производот не е пронајден.' },
+        { status: 404 }
+      );
     }
 
     return Response.json({
       success: true,
-      deleted: slot_id
+      hidden: slot_id
     });
   } catch (err) {
     return Response.json(
       {
         success: false,
-        error: err.message || 'Грешка при бришење.'
+        error: err.message || 'Грешка при криење.'
       },
       { status: 500 }
     );
   }
 }
-

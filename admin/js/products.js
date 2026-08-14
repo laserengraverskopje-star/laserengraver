@@ -486,6 +486,60 @@ window.uploadExtraProductImage =
 window.clearExtraProductImage =
   clearExtraProductImage;
 
+async function activateProduct(id, dom) {
+  if (!id) return;
+
+  const p = getRow(id);
+  const productName = p.name?.trim() || `позиција ${id}`;
+  if (!confirm(`Да го активирам повторно производот "${productName}"?`)) return;
+
+  const status = document.getElementById(`status-${dom}`);
+  if (status) {
+    status.textContent = 'Активирање...';
+    status.className = 'status';
+  }
+
+  try {
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) throw new Error('Сесијата е истечена. Најави се повторно.');
+
+    const res = await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token,
+        slot_id: id,
+        gallery: p.gallery,
+        slot: p.slot,
+        image_path: p.image_path,
+        category: p.category || '',
+        name: p.name || '',
+        price: p.price || '',
+        description: p.description || '',
+        extra_images: getExtraImages(p)
+      })
+    });
+
+    const responseText = await res.text();
+    let data = {};
+    try { data = responseText ? JSON.parse(responseText) : {}; }
+    catch (_) { throw new Error(`Серверот врати невалиден одговор (${res.status}).`); }
+
+    if (!res.ok || !data.success) throw new Error(data.error || 'Грешка при активирање.');
+
+    if (p) p.active = 1;
+    render();
+  } catch (err) {
+    console.error(err);
+    if (status) {
+      status.textContent = '✕ ' + err.message;
+      status.className = 'status error';
+    }
+  }
+}
+
+window.activateProduct = activateProduct;
+
 async function deleteProduct(id, dom) {
   if (!id) return;
 
@@ -497,7 +551,7 @@ async function deleteProduct(id, dom) {
 
   const confirmed =
     confirm(
-      `Дали сигурно сакаш да го избришеш производот "${productName}"?\n\nОва ќе ги избрише податоците за овој артикл од каталогот.`
+      `Дали сигурно сакаш да го скриеш производот "${productName}"?\n\nПроизводот нема да се избрише. Ќе останат сликите и сите податоци и подоцна можеш повторно да го активираш.`
     );
 
   if (!confirmed) return;
@@ -507,7 +561,7 @@ async function deleteProduct(id, dom) {
 
   if (status) {
     status.textContent =
-      'Бришење...';
+      'Скривање...';
 
     status.className =
       'status';
@@ -550,15 +604,12 @@ async function deleteProduct(id, dom) {
     if (!res.ok || !data.success) {
       throw new Error(
         data.error ||
-        'Грешка при бришење.'
+        'Грешка при криење.'
       );
     }
 
-    catalogRows =
-      catalogRows.filter(
-        r => r.slot_id !== id
-      );
-
+    const row = getRow(id);
+    if (row) row.active = 0;
     render();
 
   } catch (err) {
@@ -594,6 +645,7 @@ function render(){
     const desc = p.description || '';
     const extraImages = getExtraImages(p);
     const hasSavedProduct = Boolean(p.slot_id);
+    const isActive = p.active !== 0;
 
     const haystack =
       `${pathLabel(imagePath)} ${name} ${category} ${price} ${desc}`.toLowerCase();
@@ -695,23 +747,23 @@ function render(){
             Зачувај
           </button>
 
-          ${hasSavedProduct ? `
+          ${hasSavedProduct ? (isActive ? `
             <button
               type="button"
               onclick="deleteProduct('${slot.slotId}','${dom}')"
-              style="
-                background:#b42318;
-                color:#fff;
-                border:0;
-                border-radius:8px;
-                padding:10px 16px;
-                cursor:pointer;
-                font-weight:600;
-              "
+              style="background:#b42318;color:#fff;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:600;"
             >
-              Избриши
+              Избриши / Скриј
             </button>
-          ` : ''}
+          ` : `
+            <button
+              type="button"
+              onclick="activateProduct('${slot.slotId}','${dom}')"
+              style="background:#198754;color:#fff;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:600;"
+            >
+              Активирај
+            </button>
+          `) : ''}
 
         </div>
 
