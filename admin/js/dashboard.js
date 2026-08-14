@@ -65,6 +65,7 @@ async function loadDashboardStats() {
 
     document.getElementById('imageCount').textContent = Number(data.images ?? 0);
     document.getElementById('messageCount').textContent = Number(data.messages ?? 0);
+    document.querySelector('#messageCount + small').textContent = `вкупно контакт пораки • нови: ${Number(data.unread_messages ?? 0)}`;
     document.getElementById('offerCount').textContent = Number(data.offers ?? 0);
     setStatus(data.status === 'Online', data.status || 'Online', formatCheckedAt(data.checked_at));
   } catch (err) {

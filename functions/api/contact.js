@@ -6,9 +6,20 @@ async function ensureSchema(env) {
       email TEXT NOT NULL,
       phone TEXT DEFAULT '',
       message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'new',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+}
+
+async function ensureStatusColumn(env) {
+  try {
+    const columns = await env.DB.prepare(`PRAGMA table_info(contact_messages)`).all();
+    const hasStatus = (columns.results || []).some(c => c.name === 'status');
+    if (!hasStatus) {
+      await env.DB.prepare(`ALTER TABLE contact_messages ADD COLUMN status TEXT NOT NULL DEFAULT 'new'`).run();
+    }
+  } catch (_) {}
 }
 
 async function isAdmin(context) {
@@ -32,9 +43,10 @@ export async function onRequestPost(context) {
     }
 
     await ensureSchema(context.env);
+    await ensureStatusColumn(context.env);
     await context.env.DB.prepare(`
-      INSERT INTO contact_messages (name, email, phone, message)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO contact_messages (name, email, phone, message, status)
+      VALUES (?, ?, ?, ?, 'new')
     `).bind(name, email, phone, message).run();
 
     // Keep email notification available while the message is also stored in D1.
@@ -69,12 +81,14 @@ export async function onRequestGet(context) {
       return Response.json({ success: false, error: 'Неовластен пристап.' }, { status: 401 });
     }
     await ensureSchema(context.env);
+    await ensureStatusColumn(context.env);
     const { results } = await context.env.DB.prepare(`
-      SELECT id, name, email, phone, message, created_at
+      SELECT id, name, email, phone, message, status, created_at
       FROM contact_messages
       ORDER BY id DESC
     `).all();
-    return Response.json(results || [], { headers: { 'Cache-Control': 'no-store' } });
+    const unread = await context.env.DB.prepare(`SELECT COUNT(*) AS count FROM contact_messages WHERE status = 'new'`).first();
+    return Response.json({ messages: results || [], unread: Number(unread?.count || 0) }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     return Response.json({ success: false, error: err.message || 'Грешка при читање пораки.' }, { status: 500 });
   }

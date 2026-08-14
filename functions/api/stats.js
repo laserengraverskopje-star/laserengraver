@@ -16,9 +16,20 @@ async function ensureMessagesSchema(env) {
       email TEXT NOT NULL,
       phone TEXT DEFAULT '',
       message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'new',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+}
+
+async function ensureMessageStatusColumn(env) {
+  try {
+    const columns = await env.DB.prepare(`PRAGMA table_info(contact_messages)`).all();
+    const hasStatus = (columns.results || []).some(c => c.name === 'status');
+    if (!hasStatus) {
+      await env.DB.prepare(`ALTER TABLE contact_messages ADD COLUMN status TEXT NOT NULL DEFAULT 'new'`).run();
+    }
+  } catch (_) {}
 }
 
 export async function onRequestGet(context) {
@@ -28,6 +39,7 @@ export async function onRequestGet(context) {
     }
 
     await ensureMessagesSchema(context.env);
+    await ensureMessageStatusColumn(context.env);
     await context.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS requests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,6 +60,10 @@ export async function onRequestGet(context) {
 
     const messageCount = await context.env.DB.prepare(`
       SELECT COUNT(*) AS count FROM contact_messages
+    `).first();
+
+    const unreadMessageCount = await context.env.DB.prepare(`
+      SELECT COUNT(*) AS count FROM contact_messages WHERE status = 'new'
     `).first();
 
     // The gallery currently contains 155 real image slots.
@@ -81,6 +97,7 @@ export async function onRequestGet(context) {
       images: publicImageCount,
       offers: Number(requestCount?.count || 0),
       messages: Number(messageCount?.count || 0),
+      unread_messages: Number(unreadMessageCount?.count || 0),
       status: 'Online',
       checked_at: new Date().toISOString()
     }, {
