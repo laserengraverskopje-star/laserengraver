@@ -321,18 +321,19 @@
 })();
 </script>
 
-<footer>
+<footer id="siteFooter">
 
 © 2026 Laser Engraver Skopje
 
 </footer>
 <script src="js/script.js"></script>
+<script src="js/site-settings.js"></script>
 <div class="contact-modal" id="contactModal">
 <div class="contact-box contact-form-box">
 <span class="contact-close" id="closeContact">×</span>
 <h2>Контакт</h2>
-<a class="map" href="https://www.google.com/maps?q=42.006683,21.511728" target="_blank">📍 Локација</a>
-<p>📞 +389 78 266 424</p><p>📍 Skopje - Makedonija</p>
+<a class="map" id="contactMap" href="https://www.google.com/maps?q=42.006683,21.511728" target="_blank">📍 Локација</a>
+<p id="contactPhone">📞 +389 78 266 424</p><p id="contactAddress">📍 Skopje - Makedonija</p><p id="contactHours"></p><p id="contactEmail"></p><div id="contactSocials" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px"></div>
 <form id="contactForm">
 <input name="name" placeholder="Име и презиме" required type="text"><input name="email" placeholder="Вашата e-mail адреса" required type="email"><input name="phone" placeholder="Телефон" type="text"><textarea name="message" placeholder="Вашата порака" required rows="5"></textarea>
 <button class="btn-orange" id="contactSubmit" type="submit">Испрати порака</button>

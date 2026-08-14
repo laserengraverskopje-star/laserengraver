@@ -1,3 +1,4 @@
+import { isAdminRequest, getAdminCredentials, getSettings } from './_settings.js';
 async function ensureSchema(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS contact_messages (
@@ -22,13 +23,7 @@ async function ensureStatusColumn(env) {
   } catch (_) {}
 }
 
-async function isAdmin(context) {
-  const auth = context.request.headers.get('Authorization') || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
-  const username = context.env.ADMIN_USERNAME;
-  const password = context.env.ADMIN_PASSWORD;
-  return !!(username && password && token && token === btoa(`${username}:${password}`));
-}
+async function isAdmin(context) { return isAdminRequest(context); }
 
 export async function onRequestPost(context) {
   try {
@@ -49,9 +44,11 @@ export async function onRequestPost(context) {
       VALUES (?, ?, ?, ?, 'new')
     `).bind(name, email, phone, message).run();
 
+    const siteSettings = await getSettings(context.env);
     // Keep email notification available while the message is also stored in D1.
+    if (siteSettings.notifyMessages === 'true' && siteSettings.notificationEmail) {
     try {
-      await fetch('https://formsubmit.co/ajax/laserengraverskopje@gmail.com', {
+      await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(siteSettings.notificationEmail)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,6 +65,7 @@ export async function onRequestPost(context) {
         })
       });
     } catch (_) {}
+    }
 
     return Response.json({ success: true, message: 'Пораката е успешно испратена.' });
   } catch (err) {

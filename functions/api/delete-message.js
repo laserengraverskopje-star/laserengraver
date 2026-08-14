@@ -1,10 +1,5 @@
-async function isAdmin(context) {
-  const auth = context.request.headers.get('Authorization') || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
-  const username = context.env.ADMIN_USERNAME;
-  const password = context.env.ADMIN_PASSWORD;
-  return !!(username && password && token && token === btoa(`${username}:${password}`));
-}
+import { isAdminRequest, getAdminCredentials, getSettings } from './_settings.js';
+async function isAdmin(context) { return isAdminRequest(context); }
 
 export async function onRequestPost(context) {
   try {

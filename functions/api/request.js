@@ -1,3 +1,4 @@
+import { getSettings } from './_settings.js';
 export async function onRequestPost(context) {
   try {
     const body = await context.request.json();
@@ -10,7 +11,18 @@ export async function onRequestPost(context) {
     const dimensions = String(body.dimensions || '').trim();
     const description = String(body.description || '').trim();
 
-    if (!name || !email || !phone || !service || !description) {
+    const siteSettings = await getSettings(context.env);
+    if (siteSettings.offersEnabled !== 'true') {
+      return Response.json({ success:false, error:'Барањето за понуда моментално не е достапно.' }, {status:503});
+    }
+    if (siteSettings.offerRequirePhone === 'true' && !phone) {
+      return Response.json({ success:false, error:'Телефонскиот број е задолжителен.' }, {status:400});
+    }
+    if (siteSettings.offerRequireService === 'true' && !service) {
+      return Response.json({ success:false, error:'Изберете услуга.' }, {status:400});
+    }
+
+    if (!name || !email || !description || (siteSettings.offerRequirePhone === 'true' && !phone) || (siteSettings.offerRequireService === 'true' && !service)) {
       return Response.json({
         success: false,
         error: 'Пополнете ги задолжителните полиња.'
@@ -53,7 +65,8 @@ export async function onRequestPost(context) {
     // directly to FormSubmit. Database storage remains successful even if the
     // external notification service is temporarily unavailable.
     try {
-      await fetch('https://formsubmit.co/ajax/laserengraverskopje@gmail.com', {
+      if (siteSettings.notifyOffers !== 'true' || !siteSettings.notificationEmail) throw new Error('notifications-disabled');
+      await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(siteSettings.notificationEmail)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

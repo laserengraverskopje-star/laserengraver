@@ -1,3 +1,4 @@
+import { isAdminRequest, getAdminCredentials, getSettings } from './_settings.js';
 export async function onRequestPost(context) {
   try {
     const formData = await context.request.formData();
@@ -21,25 +22,8 @@ const token = authHeader.replace(/^Bearer\s+/i, '');
       );
     }
 
-    const ADMIN_USERNAME = context.env.ADMIN_USERNAME;
-    const ADMIN_PASSWORD = context.env.ADMIN_PASSWORD;
-
-    if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
-      return Response.json(
-        { success: false, error: 'Admin credentials are not configured.' },
-        { status: 500 }
-      );
-    }
-
-    const expectedToken = btoa(
-      `${ADMIN_USERNAME}:${ADMIN_PASSWORD}`
-    );
-
-    if (token !== expectedToken) {
-      return Response.json(
-        { success: false, error: 'Неовластен пристап.' },
-        { status: 401 }
-      );
+    if (!(await isAdminRequest(context))) {
+      return Response.json({ success:false, error:'Неовластен пристап.' }, {status:401});
     }
 
     if (!file.type.startsWith('image/')) {

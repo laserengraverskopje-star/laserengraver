@@ -1,5 +1,3 @@
-const ADMIN_USERNAME = "sharkylive";
-const ADMIN_PASSWORD = "SharkyLive@50";
 
 if (sessionStorage.getItem("adminLogged") !== "true") {
   location.href = "login.html";
@@ -175,6 +173,7 @@ const categories = [
 
 let currentGallery = 'gallery1';
 let catalogRows = [];
+let maxExtraImagesSetting = 3;
 
 function escapeHtml(v){
   return String(v ?? '').replace(/[&<>'"]/g, c => ({
@@ -299,13 +298,13 @@ function getExtraImages(row) {
   if (!row || row.extra_images == null) return [];
 
   if (Array.isArray(row.extra_images)) {
-    return row.extra_images.filter(Boolean).slice(0, 3);
+    return row.extra_images.filter(Boolean).slice(0, maxExtraImagesSetting);
   }
 
   try {
     const parsed = JSON.parse(String(row.extra_images));
     if (Array.isArray(parsed)) {
-      return parsed.filter(Boolean).slice(0, 3);
+      return parsed.filter(Boolean).slice(0, maxExtraImagesSetting);
     }
   } catch (_) {}
 
@@ -313,11 +312,11 @@ function getExtraImages(row) {
     .split('|')
     .map(v => v.trim())
     .filter(Boolean)
-    .slice(0, 3);
+    .slice(0, maxExtraImagesSetting);
 }
 
 function renderExtraPictures(dom, extraImages) {
-  return [0, 1, 2].map(index => {
+  return Array.from({length:maxExtraImagesSetting}, (_,index) => {
     const path = extraImages[index] || '';
     const preview = getImageUrl(path);
 
@@ -360,7 +359,7 @@ function renderExtraPictures(dom, extraImages) {
 }
 
 function collectExtraImages(dom) {
-  return [0, 1, 2]
+  return Array.from({length:maxExtraImagesSetting}, (_,index) => index)
     .map(index => {
       const el = document.getElementById(`extra-image-${dom}-${index}`);
       return el ? el.value.trim() : '';
@@ -690,7 +689,7 @@ function render(){
           <div
             style="
               display:grid;
-              grid-template-columns:repeat(3,minmax(0,1fr));
+              grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
               gap:10px;
               margin-top:8px;
             "
@@ -699,7 +698,7 @@ function render(){
           </div>
 
           <small style="display:block;margin-top:8px;opacity:.7;">
-            Додај до 3 дополнителни слики од други агли или детали на производот.
+            Додај дополнителни слики од други агли или детали на производот.
           </small>
         </div>
 
@@ -1128,32 +1127,11 @@ document
 
 updateCategoryFilter();
 
-fetch(
-  '/api/products',
-  {
-    cache:'no-store'
-  }
-)
-.then(
-  r =>
-    r.ok
-      ? r.json()
-      : []
-)
-.then(
-  rows => {
-
-    catalogRows =
-      rows || [];
-
-    render();
-  }
-)
-.catch(
-  () => {
-
-    catalogRows = [];
-
-    render();
-  }
-);
+Promise.all([
+  fetch('/api/site-settings',{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({})),
+  fetch('/api/products',{cache:'no-store'}).then(r=>r.ok?r.json():[]).catch(()=>[])
+]).then(([settings,rows])=>{
+  maxExtraImagesSetting=Math.min(3,Math.max(1,Number(settings.maxExtraImages||3)));
+  catalogRows=rows||[];
+  render();
+});

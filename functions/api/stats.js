@@ -1,12 +1,5 @@
-async function requireAdmin(context) {
-  const auth = context.request.headers.get('Authorization') || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
-  const username = context.env.ADMIN_USERNAME;
-  const password = context.env.ADMIN_PASSWORD;
-
-  if (!username || !password || !token) return false;
-  return token === btoa(`${username}:${password}`);
-}
+import { isAdminRequest, getAdminCredentials, getSettings } from './_settings.js';
+async function requireAdmin(context) { return isAdminRequest(context); }
 
 async function ensureMessagesSchema(env) {
   await env.DB.prepare(`

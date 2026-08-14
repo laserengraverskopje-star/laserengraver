@@ -1,3 +1,4 @@
+import { isAdminRequest } from './_settings.js';
 async function ensureSchema(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS catalog_items (
@@ -89,23 +90,8 @@ if (!token) {
   );
 }
 
-const ADMIN_USERNAME = context.env.ADMIN_USERNAME;
-const ADMIN_PASSWORD = context.env.ADMIN_PASSWORD;
-
-if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
-  return Response.json(
-    { success: false, error: 'Admin credentials are not configured.' },
-    { status: 500 }
-  );
-}
-
-const expectedToken = btoa(`${ADMIN_USERNAME}:${ADMIN_PASSWORD}`);
-
-if (token !== expectedToken) {
-  return Response.json(
-    { success: false, error: 'Неовластен пристап.' },
-    { status: 401 }
-  );
+if (!(await isAdminRequest(context))) {
+  return Response.json({ success:false, error:'Неовластен пристап.' }, {status:401});
 }
     const normalizedExtraImages = Array.isArray(extra_images)
       ? extra_images.filter(Boolean).slice(0, 3)
@@ -159,23 +145,8 @@ export async function onRequestDelete(context) {
       );
     }
 
-    const ADMIN_USERNAME = context.env.ADMIN_USERNAME;
-    const ADMIN_PASSWORD = context.env.ADMIN_PASSWORD;
-
-    if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
-      return Response.json(
-        { success: false, error: 'Admin credentials are not configured.' },
-        { status: 500 }
-      );
-    }
-
-    const expectedToken = btoa(`${ADMIN_USERNAME}:${ADMIN_PASSWORD}`);
-
-    if (token !== expectedToken) {
-      return Response.json(
-        { success: false, error: 'Неовластен пристап.' },
-        { status: 401 }
-      );
+    if (!(await isAdminRequest(context))) {
+      return Response.json({ success:false, error:'Неовластен пристап.' }, {status:401});
     }
 
     if (!slot_id) {
