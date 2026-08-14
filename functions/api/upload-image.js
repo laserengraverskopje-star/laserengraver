@@ -83,10 +83,10 @@ const token = authHeader.replace(/^Bearer\s+/i, '');
     );
 
     return Response.json({
-  success: true,
-  image_path: `/api/images/${uniqueName}`,
-  filename: uniqueName
-});
+      success: true,
+      image_path: `https://images.laserengraver.mk/${uniqueName}`,
+      filename: uniqueName
+    });
 
   } catch (err) {
     return Response.json(

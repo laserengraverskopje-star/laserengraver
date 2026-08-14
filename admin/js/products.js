@@ -294,6 +294,290 @@ function getSlots(gallery) {
     return slots;
 }
 
+
+function getExtraImages(row) {
+  if (!row || row.extra_images == null) return [];
+
+  if (Array.isArray(row.extra_images)) {
+    return row.extra_images.filter(Boolean).slice(0, 3);
+  }
+
+  try {
+    const parsed = JSON.parse(String(row.extra_images));
+    if (Array.isArray(parsed)) {
+      return parsed.filter(Boolean).slice(0, 3);
+    }
+  } catch (_) {}
+
+  return String(row.extra_images)
+    .split('|')
+    .map(v => v.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
+function renderExtraPictures(dom, extraImages) {
+  return [0, 1, 2].map(index => {
+    const path = extraImages[index] || '';
+    const preview = getImageUrl(path);
+
+    return `
+      <div class="extra-picture">
+        <div style="font-weight:600;margin-bottom:6px;">
+          Дополнителна слика ${index + 1}
+        </div>
+
+        <img
+          id="extra-preview-${dom}-${index}"
+          src="${escapeAttr(preview)}"
+          alt="Дополнителна слика ${index + 1}"
+          style="width:100%;height:140px;object-fit:contain;border-radius:8px;background:#111;margin-bottom:8px;"
+        >
+
+        <input
+          type="hidden"
+          id="extra-image-${dom}-${index}"
+          value="${escapeAttr(path)}"
+        >
+
+        <input
+          type="file"
+          id="extra-upload-${dom}-${index}"
+          accept="image/jpeg,image/png,image/webp"
+          onchange="uploadExtraProductImage('${dom}',${index})"
+        >
+
+        <button
+          type="button"
+          onclick="clearExtraProductImage('${dom}',${index})"
+          style="margin-top:6px;"
+        >
+          Отстрани слика
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function collectExtraImages(dom) {
+  return [0, 1, 2]
+    .map(index => {
+      const el = document.getElementById(`extra-image-${dom}-${index}`);
+      return el ? el.value.trim() : '';
+    })
+    .filter(Boolean);
+}
+
+async function uploadExtraProductImage(dom, index) {
+  const input =
+    document.getElementById(`extra-upload-${dom}-${index}`);
+
+  const file =
+    input?.files?.[0];
+
+  if (!file) return;
+
+  const status =
+    document.getElementById(`status-${dom}`);
+
+  try {
+    status.textContent =
+      `Прикачување на дополнителна слика ${index + 1}...`;
+
+    status.className =
+      'status';
+
+    const token =
+      sessionStorage.getItem('adminToken');
+
+    if (!token) {
+      throw new Error(
+        'Сесијата е истечена. Најави се повторно.'
+      );
+    }
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      'image',
+      file
+    );
+
+    const res =
+      await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: {
+          'Authorization':
+            `Bearer ${token}`
+        },
+        body: formData
+      });
+
+    const data =
+      await res.json();
+
+    if (!res.ok || !data.success) {
+      throw new Error(
+        data.error ||
+        'Грешка при прикачување.'
+      );
+    }
+
+    const imageInput =
+      document.getElementById(
+        `extra-image-${dom}-${index}`
+      );
+
+    const preview =
+      document.getElementById(
+        `extra-preview-${dom}-${index}`
+      );
+
+    imageInput.value =
+      data.image_path;
+
+    preview.src =
+      getImageUrl(data.image_path);
+
+    status.textContent =
+      `✓ Дополнителната слика ${index + 1} е прикачена`;
+
+    status.className =
+      'status saved';
+
+  } catch (err) {
+
+    console.error(err);
+
+    status.textContent =
+      '✕ ' + err.message;
+
+    status.className =
+      'status error';
+  }
+
+  input.value = '';
+}
+
+function clearExtraProductImage(dom, index) {
+  const imageInput =
+    document.getElementById(
+      `extra-image-${dom}-${index}`
+    );
+
+  const preview =
+    document.getElementById(
+      `extra-preview-${dom}-${index}`
+    );
+
+  if (imageInput) {
+    imageInput.value = '';
+  }
+
+  if (preview) {
+    preview.src = '';
+  }
+}
+
+window.uploadExtraProductImage =
+  uploadExtraProductImage;
+
+window.clearExtraProductImage =
+  clearExtraProductImage;
+
+async function deleteProduct(id, dom) {
+  if (!id) return;
+
+  const p =
+    getRow(id);
+
+  const productName =
+    p.name?.trim() || `позиција ${id}`;
+
+  const confirmed =
+    confirm(
+      `Дали сигурно сакаш да го избришеш производот "${productName}"?\n\nОва ќе ги избрише податоците за овој артикл од каталогот.`
+    );
+
+  if (!confirmed) return;
+
+  const status =
+    document.getElementById(`status-${dom}`);
+
+  if (status) {
+    status.textContent =
+      'Бришење...';
+
+    status.className =
+      'status';
+  }
+
+  try {
+    const token =
+      sessionStorage.getItem('adminToken');
+
+    if (!token) {
+      throw new Error(
+        'Сесијата е истечена. Најави се повторно.'
+      );
+    }
+
+    const res =
+      await fetch('/api/products', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type':
+            'application/json'
+        },
+        body: JSON.stringify({
+          token,
+          slot_id: id
+        })
+      });
+
+    const responseText = await res.text();
+    let data = {};
+
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch (_) {
+      throw new Error(
+        `Серверот врати невалиден одговор (${res.status}).`
+      );
+    }
+
+    if (!res.ok || !data.success) {
+      throw new Error(
+        data.error ||
+        'Грешка при бришење.'
+      );
+    }
+
+    catalogRows =
+      catalogRows.filter(
+        r => r.slot_id !== id
+      );
+
+    render();
+
+  } catch (err) {
+
+    console.error(err);
+
+    if (status) {
+      status.textContent =
+        '✕ ' + err.message;
+
+      status.className =
+        'status error';
+    }
+  }
+}
+
+window.deleteProduct =
+  deleteProduct;
+
 function render(){
   const container = document.getElementById('products');
   const q = document.getElementById('search').value.toLowerCase().trim();
@@ -308,6 +592,8 @@ function render(){
     const name = p.name || '';
     const price = p.price || '';
     const desc = p.description || '';
+    const extraImages = getExtraImages(p);
+    const hasSavedProduct = Boolean(p.slot_id);
 
     const haystack =
       `${pathLabel(imagePath)} ${name} ${category} ${price} ${desc}`.toLowerCase();
@@ -346,6 +632,25 @@ function render(){
           onchange="uploadProductImage('${dom}')"
         >
 
+        <div style="margin-top:16px;">
+          <label>Дополнителни слики</label>
+
+          <div
+            style="
+              display:grid;
+              grid-template-columns:repeat(3,minmax(0,1fr));
+              gap:10px;
+              margin-top:8px;
+            "
+          >
+            ${renderExtraPictures(dom, extraImages)}
+          </div>
+
+          <small style="display:block;margin-top:8px;opacity:.7;">
+            Додај до 3 дополнителни слики од други агли или детали на производот.
+          </small>
+        </div>
+
         <div class="grid-two">
 
           <div>
@@ -381,18 +686,41 @@ function render(){
           placeholder="Краток опис на производот..."
         >${escapeHtml(desc)}</textarea>
 
-        <button
-          class="save"
-          onclick="saveProduct('${dom}','${slot.slotId}','${currentGallery}',${slot.slot})"
-        >
-          Зачувај
-        </button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+
+          <button
+            class="save"
+            onclick="saveProduct('${dom}','${slot.slotId}','${currentGallery}',${slot.slot})"
+          >
+            Зачувај
+          </button>
+
+          ${hasSavedProduct ? `
+            <button
+              type="button"
+              onclick="deleteProduct('${slot.slotId}','${dom}')"
+              style="
+                background:#b42318;
+                color:#fff;
+                border:0;
+                border-radius:8px;
+                padding:10px 16px;
+                cursor:pointer;
+                font-weight:600;
+              "
+            >
+              Избриши
+            </button>
+          ` : ''}
+
+        </div>
 
         <div class="status" id="status-${dom}"></div>
 
       </article>`;
   }).join('');
 }
+
 
 function getImageUrl(path) {
   path = (path || '').trim();
@@ -592,7 +920,10 @@ async function saveProduct(dom, id, gallery, slot) {
             document
               .getElementById(`desc-${dom}`)
               .value
-              .trim()
+              .trim(),
+
+          extra_images:
+            collectExtraImages(dom)
         })
       });
 
@@ -643,7 +974,10 @@ async function saveProduct(dom, id, gallery, slot) {
         document
           .getElementById(`desc-${dom}`)
           .value
-          .trim()
+          .trim(),
+
+      extra_images:
+        collectExtraImages(dom)
     };
 
     catalogRows =
