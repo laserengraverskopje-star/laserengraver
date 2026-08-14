@@ -1,49 +1,64 @@
+function token() {
+  return sessionStorage.getItem('adminToken') || '';
+}
+
+function esc(v) {
+  return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+}
+
 async function loadRequests() {
-    const res = await fetch("/api/requests");
-    const requests = await res.json();
+  const response = await fetch("/api/requests", {
+    cache: 'no-store',
+    headers: { 'Authorization': `Bearer ${token()}` }
+  });
 
-    const tbody = document.getElementById("offersTable");
+  if (response.status === 401) {
+    sessionStorage.clear();
+    location.href = 'login.html';
+    return;
+  }
 
-    tbody.innerHTML = "";
+  const requests = await response.json();
+  if (!response.ok || !Array.isArray(requests)) {
+    throw new Error(requests.error || 'Грешка при читање на понудите.');
+  }
 
-    requests.forEach(r => {
-
-        tbody.innerHTML += `
-        <tr>
-            <td>${r.id}</td>
-            <td>${r.name}</td>
-            <td>${r.email}</td>
-            <td>${r.phone}</td>
-            <td>${r.service}</td>
-            <td>
-                <button onclick="deleteRequest(${r.id})">
-                    Избриши
-                </button>
-            </td>
-        </tr>
-        `;
-
-    });
+  const tbody = document.getElementById("offersTable");
+  tbody.innerHTML = requests.length ? requests.map(r => `
+    <tr>
+      <td>${esc(r.id)}</td>
+      <td>${esc(r.name)}</td>
+      <td>${esc(r.email)}</td>
+      <td>${esc(r.phone)}</td>
+      <td>${esc(r.service)}</td>
+      <td>${esc(r.material || '')}</td>
+      <td>${esc(r.created_at || '')}</td>
+      <td><button onclick="deleteRequest(${Number(r.id)})">Избриши</button></td>
+    </tr>
+  `).join('') : '<tr><td colspan="8">Нема понуди.</td></tr>';
 }
 
 async function deleteRequest(id){
+  if(!confirm("Избриши ја понудата?")) return;
 
-    if(!confirm("Избриши ја понудата?")) return;
+  const response = await fetch("/api/delete-request", {
+    method:"POST",
+    headers:{"Content-Type":"application/json",'Authorization':`Bearer ${token()}`},
+    body:JSON.stringify({id})
+  });
 
-    await fetch("/api/delete-request",{
+  if (response.status === 401) {
+    sessionStorage.clear();
+    location.href = 'login.html';
+    return;
+  }
 
-        method:"POST",
-
-        headers:{
-            "Content-Type":"application/json"
-        },
-
-        body:JSON.stringify({id})
-
-    });
-
-    loadRequests();
-
+  const data = await response.json();
+  if (!response.ok || !data.success) {
+    alert(data.error || 'Грешка при бришење.');
+    return;
+  }
+  loadRequests().catch(err => alert(err.message));
 }
 
-loadRequests();
+loadRequests().catch(err => alert(err.message));

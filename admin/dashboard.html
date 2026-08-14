@@ -4,152 +4,55 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Laser Engraver Admin</title>
-
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial,Helvetica,sans-serif;
-}
-
-body{
-display:flex;
-background:#f4f4f4;
-}
-
-.sidebar{
-width:240px;
-background:#111827;
-height:100vh;
-color:white;
-padding:20px;
-}
-
-.sidebar h2{
-margin-bottom:30px;
-color:#ff7a00;
-}
-
-.sidebar a{
-display:block;
-color:white;
-text-decoration:none;
-padding:12px;
-border-radius:8px;
-margin-bottom:10px;
-}
-
-.sidebar a:hover{
-background:#1f2937;
-}
-
-.main{
-flex:1;
-padding:40px;
-}
-
-.cards{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:20px;
-margin-top:25px;
-}
-
-.card{
-background:white;
-padding:25px;
-border-radius:10px;
-box-shadow:0 5px 15px rgba(0,0,0,.1);
-}
-
-.card h3{
-margin-bottom:10px;
-}
-
-.card span{
-font-size:28px;
-font-weight:bold;
-color:#ff7a00;
-}
-
-.logout{
-margin-top:40px;
-background:#ff7a00;
-border:none;
-padding:12px;
-width:100%;
-color:white;
-cursor:pointer;
-border-radius:8px;
-font-size:16px;
-}
-
-.logout:hover{
-background:#ff9300;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{display:flex;background:#f4f4f4;min-height:100vh;color:#111827}
+.sidebar{width:240px;background:#111827;min-height:100vh;color:white;padding:20px;flex-shrink:0}
+.sidebar h2{margin-bottom:30px;color:#ff7a00}
+.sidebar a{display:block;color:white;text-decoration:none;padding:12px;border-radius:8px;margin-bottom:10px}
+.sidebar a:hover{background:#1f2937}
+.sidebar a.active{background:#1f2937;box-shadow:inset 3px 0 0 #ff7a00}
+.main{flex:1;padding:40px;min-width:0}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.topbar p{margin-top:6px;color:#6b7280}
+.refresh{background:#111827;color:#fff;border:0;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
+.refresh:hover{background:#1f2937}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:25px}
+.card{background:white;padding:25px;border-radius:10px;box-shadow:0 5px 15px rgba(0,0,0,.1)}
+.card h3{margin-bottom:10px}.card span{font-size:28px;font-weight:bold;color:#ff7a00;display:block;min-height:34px}
+.card small{display:block;margin-top:8px;color:#6b7280}
+.status-online{color:#16803b!important}.status-offline{color:#c62828!important}
+.info{margin-top:22px;background:#fff;padding:16px 18px;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,.07);color:#4b5563}
+.error-box{display:none;margin-top:15px;background:#fee2e2;color:#991b1b;padding:12px 14px;border-radius:8px}
+.logout{margin-top:40px;background:#ff7a00;border:none;padding:12px;width:100%;color:white;cursor:pointer;border-radius:8px;font-size:16px}.logout:hover{background:#ff9300}
+@media(max-width:800px){body{display:block}.sidebar{width:100%;min-height:auto}.main{padding:22px}.logout{margin-top:15px}}
 </style>
-
 </head>
 <body>
-
 <div class="sidebar">
-
 <h2>Laser Admin</h2>
-
-<a href="#">🏠 Dashboard</a>
-
+<a class="active" href="dashboard.html">🏠 Dashboard</a>
 <a href="products.html">💰 Цени и производи</a>
-
 <a href="offers.html">📦 Понуди</a>
-
-
-<a href="#">📨 Контакт пораки</a>
-
+<a href="messages.html">📨 Контакт пораки</a>
 <a href="#">⚙️ Поставки</a>
-
 <button class="logout" onclick="logout()">Logout</button>
-
 </div>
-
 <div class="main">
-
-<h1>Добредојде!</h1>
-
-<p>Laser Engraver Control Panel</p>
-
+<div class="topbar">
+  <div><h1>Добредојде!</h1><p>Laser Engraver Control Panel</p></div>
+  <button class="refresh" id="refreshBtn" type="button">↻ Освежи</button>
+</div>
 <div class="cards">
-
-<div class="card">
-<h3>Вкупно слики</h3>
-<span>36</span>
+  <div class="card"><h3>Вкупно слики</h3><span id="imageCount">—</span><small>активни слики во јавните галерии</small></div>
+  <div class="card"><h3>Пораки</h3><span id="messageCount">—</span><small>контакт пораки во базата</small></div>
+  <div class="card"><h3>Понуди</h3><span id="offerCount">—</span><small>барања за понуда во базата</small></div>
+  <div class="card"><h3>Статус</h3><span id="statusValue">Проверка...</span><small id="statusTime">—</small></div>
 </div>
-
-<div class="card">
-<h3>Пораки</h3>
-<span>0</span>
+<div class="error-box" id="errorBox"></div>
+<div class="info">Бројките се читаат директно од серверот. Dashboard-от автоматски се освежува на секои 30 секунди.</div>
 </div>
-
-<div class="card">
-<h3>Понуди</h3>
-<span>12</span>
-</div>
-
-<div class="card">
-<h3>Статус</h3>
-<span>Online</span>
-</div>
-
-</div>
-
-</div>
-
-<script>
-function logout(){
-window.location.href="login.html";
-}
-</script>
-
+<script src="js/dashboard.js"></script>
 <script src="js/login.js"></script>
 </body>
 </html>

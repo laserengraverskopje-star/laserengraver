@@ -328,12 +328,17 @@
 </footer>
 <script src="js/script.js"></script>
 <div class="contact-modal" id="contactModal">
-<div class="contact-box">
+<div class="contact-box contact-form-box">
 <span class="contact-close" id="closeContact">×</span>
-<h2>LaserEngraverSkopje</h2>
+<h2>Контакт</h2>
 <a class="map" href="https://www.google.com/maps?q=42.006683,21.511728" target="_blank">📍 Локација</a>
-<p>📞 +389 78 266 424</p>
-<p>📍 Skopje - Makedonija</p>
+<p>📞 +389 78 266 424</p><p>📍 Skopje - Makedonija</p>
+<form id="contactForm">
+<input name="name" placeholder="Име и презиме" required type="text"><input name="email" placeholder="Вашата e-mail адреса" required type="email"><input name="phone" placeholder="Телефон" type="text"><textarea name="message" placeholder="Вашата порака" required rows="5"></textarea>
+<button class="btn-orange" id="contactSubmit" type="submit">Испрати порака</button>
+</form>
+<div id="contactSuccess" style="display:none;background:#1f9d55;color:#fff;padding:12px;border-radius:8px;margin-top:12px;text-align:center;font-weight:bold;">✅ Пораката е успешно испратена.</div>
+<div id="contactError" style="display:none;background:#b42318;color:#fff;padding:12px;border-radius:8px;margin-top:12px;text-align:center;font-weight:bold;"></div>
 </div></div>
 <script src="js/script.js"></script>
 <script>
@@ -406,50 +411,43 @@ document.getElementById('lang-en').onclick=(e)=>{e.preventDefault();setLang('en'
 <div class="quote-box">
 <span class="quote-close" id="closeQuote">×</span>
 <h2>Побарај понуда</h2>
-<form id="quoteForm" action="https://formsubmit.co/laserengraverskopje@gmail.com" method="POST">
-<input type="hidden" name="_next" value="https://laserengraver.mk">
-<input type="hidden" name="_template" value="table">
-<input name="_subject" type="hidden" value="Ново барање од laserengraver.mk"/>
-<input name="_captcha" type="hidden" value="false"/>
-<input name="name" placeholder="Име и презиме" required="" type="text"/>
-<input name="email" placeholder="Вашата e-mail адреса" required="" type="email"/>
-<input name="phone" placeholder="Контакт телефон" required="" type="text"/>
+<form id="quoteForm">
+<input name="name" placeholder="Име и презиме" required type="text"/>
+<input name="email" placeholder="Вашата e-mail адреса" required type="email"/>
+<input name="phone" placeholder="Контакт телефон" required type="text"/>
 <div class="form-row"><select name="service" required>
-<option value="">Изберете услуга</option>
-<option>Ласерско гравирање</option>
-<option>Ласерско сечење</option>
-<option>Изработка по нарачка</option>
-<option>Друго</option>
-</select>
-<select name="material">
-<option value="">Материјал (опционално)</option>
-<option>Дрво</option>
-<option>Плексиглас</option>
-<option>Метал</option>
-<option>Стакло</option>
-<option>Кожа</option>
-<option>Пластика</option>
-<option>Друго</option>
+<option value="">Изберете услуга</option><option>Ласерско гравирање</option><option>Ласерско сечење</option><option>Изработка по нарачка</option><option>Друго</option>
+</select><select name="material">
+<option value="">Материјал (опционално)</option><option>Дрво</option><option>Плексиглас</option><option>Метал</option><option>Стакло</option><option>Кожа</option><option>Пластика</option><option>Друго</option>
 </select></div>
-<div class="file-placeholder">📎 Прикачи слика или документ (наскоро)</div>
-<p style="font-size:13px;color:#bbb;margin:8px 0;">📎 Прикачување датотеки ќе биде достапно во следната верзија (потребен е сервис што поддржува attachments).</p>
 <input name="dimensions" type="text" placeholder="Димензии (пример: 200 x 150 mm)"/>
-<textarea name="message" placeholder="Опис на барањето" required="" rows="5"></textarea>
-<button class="btn-orange" type="submit">Испрати барање</button>
+<textarea name="message" placeholder="Опис на барањето" required rows="5"></textarea>
+<button class="btn-orange" id="quoteSubmit" type="submit">Испрати барање</button>
 </form>
-<div id="successMessage" style="display:none;background:#1f9d55;color:#fff;padding:15px;border-radius:8px;margin-top:15px;text-align:center;font-weight:bold;">
-✅ Вашето барање е успешно испратено. Ќе ве контактираме во најкраток можен рок.
-</div>
-
+<div id="successMessage" style="display:none;background:#1f9d55;color:#fff;padding:15px;border-radius:8px;margin-top:15px;text-align:center;font-weight:bold;">✅ Вашето барање е успешно испратено. Ќе ве контактираме во најкраток можен рок.</div>
+<div id="quoteError" style="display:none;background:#b42318;color:#fff;padding:12px;border-radius:8px;margin-top:12px;text-align:center;font-weight:bold;"></div>
 </div>
 </div>
 <script>
-const qb=document.getElementById('quoteBtn');
-const qm=document.getElementById('quoteModal');
-const qc=document.getElementById('closeQuote');
-if(qb){qb.onclick=e=>{e.preventDefault();qm.style.display='flex';};}
-if(qc){qc.onclick=()=>qm.style.display='none';}
+const qb=document.getElementById('quoteBtn'), qm=document.getElementById('quoteModal'), qc=document.getElementById('closeQuote');
+const quoteForm=document.getElementById('quoteForm'), quoteSubmit=document.getElementById('quoteSubmit'), quoteSuccess=document.getElementById('successMessage'), quoteError=document.getElementById('quoteError');
+if(qb)qb.onclick=e=>{e.preventDefault();qm.style.display='flex';};
+if(qc)qc.onclick=()=>qm.style.display='none';
 window.addEventListener('click',e=>{if(e.target===qm)qm.style.display='none';});
+if(quoteForm)quoteForm.addEventListener('submit',async e=>{
+ e.preventDefault(); quoteError.style.display='none'; quoteSuccess.style.display='none'; quoteSubmit.disabled=true; quoteSubmit.textContent='Испраќање...';
+ const fd=new FormData(quoteForm), payload={name:String(fd.get('name')||'').trim(),email:String(fd.get('email')||'').trim(),phone:String(fd.get('phone')||'').trim(),service:String(fd.get('service')||'').trim(),material:String(fd.get('material')||'').trim(),dimensions:String(fd.get('dimensions')||'').trim(),description:String(fd.get('message')||'').trim()};
+ try{const r=await fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Неуспешно испраќање.');quoteForm.reset();quoteSuccess.style.display='block';}catch(err){quoteError.textContent=err.message||'Грешка при испраќање.';quoteError.style.display='block';}finally{quoteSubmit.disabled=false;quoteSubmit.textContent='Испрати барање';}
+});
+const contactBtn=document.getElementById('contactBtn'), contactModal=document.getElementById('contactModal'), closeContact=document.getElementById('closeContact'), contactForm=document.getElementById('contactForm'), contactSubmit=document.getElementById('contactSubmit'), contactSuccess=document.getElementById('contactSuccess'), contactError=document.getElementById('contactError');
+if(contactBtn&&contactModal)contactBtn.addEventListener('click',e=>{e.preventDefault();contactModal.classList.add('active');});
+if(closeContact&&contactModal)closeContact.addEventListener('click',()=>contactModal.classList.remove('active'));
+if(contactModal)contactModal.addEventListener('click',e=>{if(e.target===contactModal)contactModal.classList.remove('active');});
+if(contactForm)contactForm.addEventListener('submit',async e=>{
+ e.preventDefault(); contactError.style.display='none'; contactSuccess.style.display='none'; contactSubmit.disabled=true; contactSubmit.textContent='Испраќање...';
+ const fd=new FormData(contactForm), payload={name:String(fd.get('name')||'').trim(),email:String(fd.get('email')||'').trim(),phone:String(fd.get('phone')||'').trim(),message:String(fd.get('message')||'').trim()};
+ try{const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Неуспешно испраќање.');contactForm.reset();contactSuccess.style.display='block';}catch(err){contactError.textContent=err.message||'Грешка при испраќање.';contactError.style.display='block';}finally{contactSubmit.disabled=false;contactSubmit.textContent='Испрати порака';}
+});
 </script>
 
 <audio id="bgMusic" loop preload="auto">
