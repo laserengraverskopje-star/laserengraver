@@ -33,6 +33,24 @@ function showError(message) {
   box.textContent = message;
 }
 
+async function getRefreshSeconds() {
+  try {
+    const response = await fetch('../api/settings-admin', { cache: 'no-store', headers: { 'Authorization': `Bearer ${adminToken()}` } });
+    if (!response.ok) return 30;
+    const data = await response.json();
+    return Math.min(300, Math.max(5, Number(data.adminAutoRefresh || 30)));
+  } catch (_) { return 30; }
+}
+
+async function scheduleRefresh() {
+  if (dashboardState.timer) clearTimeout(dashboardState.timer);
+  const seconds = await getRefreshSeconds();
+  dashboardState.timer = setTimeout(async () => {
+    await loadDashboardStats();
+    scheduleRefresh();
+  }, seconds * 1000);
+}
+
 async function loadDashboardStats() {
   if (dashboardState.loading) return;
   dashboardState.loading = true;
@@ -79,4 +97,4 @@ async function loadDashboardStats() {
 
 document.getElementById('refreshBtn').addEventListener('click', loadDashboardStats);
 loadDashboardStats();
-dashboardState.timer = setInterval(loadDashboardStats, 30000);
+scheduleRefresh();

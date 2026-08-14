@@ -50,6 +50,10 @@ export async function onRequestPost(context) {
         await context.env.DB.prepare(`INSERT INTO site_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP`).bind(key, value).run();
       }
     }
+    if (updates.adminAutoRefresh !== undefined) {
+      const value = String(Math.min(300, Math.max(5, Number(updates.adminAutoRefresh || 30))));
+      await context.env.DB.prepare(`INSERT INTO site_settings (key, value, updated_at) VALUES ('adminAutoRefresh', ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP`).bind(value).run();
+    }
     if (updates.admin_username !== undefined) {
       const value = String(updates.admin_username || '').trim();
       if (!value) return Response.json({ success: false, error: 'Admin username не може да биде празен.' }, { status: 400 });

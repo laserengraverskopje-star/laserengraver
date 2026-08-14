@@ -194,10 +194,12 @@
   }
   function getExtraImages(p){
     if (!p || p.extra_images == null) return [];
-    if (Array.isArray(p.extra_images)) return p.extra_images.filter(Boolean).slice(0,3);
+    if (Array.isArray(p.extra_images)) const max = Math.min(3, Math.max(1, Number(window.siteSettings?.maxExtraImages || 3)));
+    return p.extra_images.filter(Boolean).slice(0,max);
     try {
       const parsed = JSON.parse(String(p.extra_images));
-      return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0,3) : [];
+      const max = Math.min(3, Math.max(1, Number(window.siteSettings?.maxExtraImages || 3)));
+      return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0,max) : [];
     } catch (_) { return []; }
   }
   function openProduct(slotId, fallbackPath){
@@ -240,10 +242,18 @@
         img.alt = `Дополнителна слика ${index+1}`;
         img.title = `Дополнителна слика ${index+1}`;
         img.addEventListener('click', ()=> {
-          modalImage.src = img.src;
-          modalImage.alt = `Дополнителна слика ${index+1}`;
-          extraGallery.querySelectorAll('.product-extra-thumb').forEach(x => x.classList.remove('active'));
-          img.classList.add('active');
+          const returnToMain = window.siteSettings?.openMainOnExtraClick !== false;
+          if (returnToMain) {
+            modalImage.src = getImageUrl(mainPath);
+            modalImage.alt = p.name || 'Производ';
+            extraGallery.querySelectorAll('.product-extra-thumb').forEach(x => x.classList.remove('active'));
+            mainThumb.classList.add('active');
+          } else {
+            modalImage.src = img.src;
+            modalImage.alt = `Дополнителна слика ${index+1}`;
+            extraGallery.querySelectorAll('.product-extra-thumb').forEach(x => x.classList.remove('active'));
+            img.classList.add('active');
+          }
         });
         img.addEventListener('dblclick', ()=> openLightbox(img.src));
         img.onerror = ()=> img.remove();
