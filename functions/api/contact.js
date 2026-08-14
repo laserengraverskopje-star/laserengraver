@@ -3,24 +3,35 @@ async function ensureSchema(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS contact_messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL,
+      name TEXT NOT NULL DEFAULT '',
+      email TEXT NOT NULL DEFAULT '',
       phone TEXT DEFAULT '',
-      message TEXT NOT NULL,
+      message TEXT NOT NULL DEFAULT '',
       status TEXT NOT NULL DEFAULT 'new',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+
+  // Older deployments may already have contact_messages with an older schema.
+  // Add only missing columns so existing messages are preserved.
+  const columns = await env.DB.prepare(`PRAGMA table_info(contact_messages)`).all();
+  const names = new Set((columns.results || []).map(c => c.name));
+  const migrations = [
+    ['name', `ALTER TABLE contact_messages ADD COLUMN name TEXT NOT NULL DEFAULT ''`],
+    ['email', `ALTER TABLE contact_messages ADD COLUMN email TEXT NOT NULL DEFAULT ''`],
+    ['phone', `ALTER TABLE contact_messages ADD COLUMN phone TEXT DEFAULT ''`],
+    ['message', `ALTER TABLE contact_messages ADD COLUMN message TEXT NOT NULL DEFAULT ''`],
+    ['status', `ALTER TABLE contact_messages ADD COLUMN status TEXT NOT NULL DEFAULT 'new'`],
+    ['created_at', `ALTER TABLE contact_messages ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP`]
+  ];
+  for (const [name, sql] of migrations) {
+    if (!names.has(name)) await env.DB.prepare(sql).run();
+  }
 }
 
 async function ensureStatusColumn(env) {
-  try {
-    const columns = await env.DB.prepare(`PRAGMA table_info(contact_messages)`).all();
-    const hasStatus = (columns.results || []).some(c => c.name === 'status');
-    if (!hasStatus) {
-      await env.DB.prepare(`ALTER TABLE contact_messages ADD COLUMN status TEXT NOT NULL DEFAULT 'new'`).run();
-    }
-  } catch (_) {}
+  // Kept for compatibility with earlier versions of the API.
+  await ensureSchema(env);
 }
 
 async function isAdmin(context) { return isAdminRequest(context); }
