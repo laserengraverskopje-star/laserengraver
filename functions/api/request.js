@@ -1,4 +1,5 @@
 import { getSettings } from './_settings.js';
+import { sendNotificationEmail } from './_mail.js';
 export async function onRequestPost(context) {
   try {
     const body = await context.request.json();
@@ -61,36 +62,34 @@ export async function onRequestPost(context) {
       .bind(name, email, phone, service, material, dimensions, description)
       .run();
 
-    // Preserve the previous email workflow without making the browser submit
-    // directly to FormSubmit. Database storage remains successful even if the
-    // external notification service is temporarily unavailable.
-    try {
-      if (siteSettings.notifyOffers !== 'true' || !siteSettings.notificationEmail) throw new Error('notifications-disabled');
-      await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(siteSettings.notificationEmail)}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          phone,
-          service,
-          material,
-          dimensions,
-          message: description,
-          _subject: 'Ново барање од laserengraver.mk',
-          _template: 'table',
-          _captcha: 'false'
-        })
+    let emailSent = false;
+    let emailExpected = siteSettings.notifyOffers === 'true';
+    let emailError = '';
+    if (siteSettings.notifyOffers === 'true' && siteSettings.notificationEmail) {
+      const mail = await sendNotificationEmail(context.env, {
+        to: siteSettings.notificationEmail,
+        subject: 'Ново барање од laserengraver.mk',
+        replyTo: email,
+        text: `Име: ${name}\nE-mail: ${email}\nТелефон: ${phone}\nУслуга: ${service}\nМатеријал: ${material}\nДимензии: ${dimensions}\n\nОпис:\n${description}`,
+        fields: [
+          ['Име', name],
+          ['E-mail', email],
+          ['Телефон', phone],
+          ['Услуга', service],
+          ['Материјал', material],
+          ['Димензии', dimensions],
+          ['Опис', description]
+        ]
       });
-    } catch (_) {
-      // Do not fail the user's request because an external email provider is down.
+      emailSent = !!mail.sent;
+      emailError = mail.sent ? '' : (mail.error || 'E-mail известувањето не е испратено.');
     }
+
 
     return Response.json({
       success: true,
+      emailSent,
+      warning: emailExpected && !emailSent ? (emailError || 'Барањето е зачувано, но e-mail известувањето не е испратено.') : '',
       message: 'Барањето е успешно испратено.'
     });
   } catch (err) {

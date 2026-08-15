@@ -34,3 +34,19 @@ async function save(){
  }catch(e){show('err',e.message);}finally{saveBtn.disabled=false;}
 }
 saveBtn.addEventListener('click',save);load();
+
+
+const testEmailBtn=document.getElementById('testEmailBtn');
+const emailTestStatus=document.getElementById('emailTestStatus');
+if(testEmailBtn){testEmailBtn.addEventListener('click',async()=>{
+  emailTestStatus.textContent='Се испраќа...';
+  testEmailBtn.disabled=true;
+  try{
+    const r=await fetch('/api/test-email',{method:'POST',headers:{'Authorization':`Bearer ${tok()}`,'Content-Type':'application/json'}});
+    const d=await r.json().catch(()=>({}));
+    if(r.status===401){location.href='login.html';return;}
+    if(!r.ok||!d.success)throw new Error(d.error||'Тест e-mail не е испратен.');
+    emailTestStatus.textContent='✓ Тест e-mail е испратен.';
+  }catch(e){emailTestStatus.textContent='✕ '+(e.message||'Грешка.');}
+  finally{testEmailBtn.disabled=false;}
+});}

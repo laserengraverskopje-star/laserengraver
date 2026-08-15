@@ -194,12 +194,11 @@
   }
   function getExtraImages(p){
     if (!p || p.extra_images == null) return [];
-    const max = Math.min(3, Math.max(1, Number(window.siteSettings?.maxExtraImages || 3)));
-    if (Array.isArray(p.extra_images)) {
-      return p.extra_images.filter(Boolean).slice(0,max);
-    }
+    if (Array.isArray(p.extra_images)) const max = Math.min(3, Math.max(1, Number(window.siteSettings?.maxExtraImages || 3)));
+    return p.extra_images.filter(Boolean).slice(0,max);
     try {
       const parsed = JSON.parse(String(p.extra_images));
+      const max = Math.min(3, Math.max(1, Number(window.siteSettings?.maxExtraImages || 3)));
       return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0,max) : [];
     } catch (_) { return []; }
   }
@@ -449,7 +448,7 @@ window.addEventListener('click',e=>{if(e.target===qm)qm.style.display='none';});
 if(quoteForm)quoteForm.addEventListener('submit',async e=>{
  e.preventDefault(); quoteError.style.display='none'; quoteSuccess.style.display='none'; quoteSubmit.disabled=true; quoteSubmit.textContent='Испраќање...';
  const fd=new FormData(quoteForm), payload={name:String(fd.get('name')||'').trim(),email:String(fd.get('email')||'').trim(),phone:String(fd.get('phone')||'').trim(),service:String(fd.get('service')||'').trim(),material:String(fd.get('material')||'').trim(),dimensions:String(fd.get('dimensions')||'').trim(),description:String(fd.get('message')||'').trim()};
- try{const r=await fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Неуспешно испраќање.');quoteForm.reset();quoteSuccess.style.display='block';}catch(err){quoteError.textContent=err.message||'Грешка при испраќање.';quoteError.style.display='block';}finally{quoteSubmit.disabled=false;quoteSubmit.textContent='Испрати барање';}
+ try{const r=await fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Неуспешно испраќање.');quoteForm.reset();quoteSuccess.textContent=d.warning?'✅ Барањето е зачувано. '+d.warning:'✅ Барањето е успешно испратено.';quoteSuccess.style.display='block';}catch(err){quoteError.textContent=err.message||'Грешка при испраќање.';quoteError.style.display='block';}finally{quoteSubmit.disabled=false;quoteSubmit.textContent='Испрати барање';}
 });
 const contactBtn=document.getElementById('contactBtn'), contactModal=document.getElementById('contactModal'), closeContact=document.getElementById('closeContact'), contactForm=document.getElementById('contactForm'), contactSubmit=document.getElementById('contactSubmit'), contactSuccess=document.getElementById('contactSuccess'), contactError=document.getElementById('contactError');
 if(contactBtn&&contactModal)contactBtn.addEventListener('click',e=>{e.preventDefault();contactModal.classList.add('active');});
@@ -458,7 +457,7 @@ if(contactModal)contactModal.addEventListener('click',e=>{if(e.target===contactM
 if(contactForm)contactForm.addEventListener('submit',async e=>{
  e.preventDefault(); contactError.style.display='none'; contactSuccess.style.display='none'; contactSubmit.disabled=true; contactSubmit.textContent='Испраќање...';
  const fd=new FormData(contactForm), payload={name:String(fd.get('name')||'').trim(),email:String(fd.get('email')||'').trim(),phone:String(fd.get('phone')||'').trim(),message:String(fd.get('message')||'').trim()};
- try{const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Неуспешно испраќање.');contactForm.reset();contactSuccess.style.display='block';}catch(err){contactError.textContent=err.message||'Грешка при испраќање.';contactError.style.display='block';}finally{contactSubmit.disabled=false;contactSubmit.textContent='Испрати порака';}
+ try{const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Неуспешно испраќање.');contactForm.reset();contactSuccess.textContent=d.warning?'✅ Пораката е зачувана. '+d.warning:'✅ Пораката е успешно испратена.';contactSuccess.style.display='block';}catch(err){contactError.textContent=err.message||'Грешка при испраќање.';contactError.style.display='block';}finally{contactSubmit.disabled=false;contactSubmit.textContent='Испрати порака';}
 });
 </script>
 

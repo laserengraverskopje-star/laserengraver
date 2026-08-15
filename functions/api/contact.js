@@ -1,4 +1,5 @@
-import { isAdminRequest, getAdminCredentials, getSettings } from './_settings.js';
+import { isAdminRequest, getSettings } from './_settings.js';
+import { sendNotificationEmail } from './_mail.js';
 async function ensureSchema(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS contact_messages (
@@ -56,29 +57,28 @@ export async function onRequestPost(context) {
     `).bind(name, email, phone, message).run();
 
     const siteSettings = await getSettings(context.env);
-    // Keep email notification available while the message is also stored in D1.
+    let emailSent = false;
+    let emailExpected = siteSettings.notifyMessages === 'true';
+    let emailError = '';
     if (siteSettings.notifyMessages === 'true' && siteSettings.notificationEmail) {
-    try {
-      await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(siteSettings.notificationEmail)}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          phone,
-          message,
-          _subject: 'Нова контакт порака од laserengraver.mk',
-          _template: 'table',
-          _captcha: 'false'
-        })
+      const mail = await sendNotificationEmail(context.env, {
+        to: siteSettings.notificationEmail,
+        subject: 'Нова контакт порака од laserengraver.mk',
+        replyTo: email,
+        text: `Име: ${name}\nE-mail: ${email}\nТелефон: ${phone}\n\nПорака:\n${message}`,
+        fields: [
+          ['Име', name],
+          ['E-mail', email],
+          ['Телефон', phone],
+          ['Порака', message]
+        ]
       });
-    } catch (_) {}
+      emailSent = !!mail.sent;
+      emailError = mail.sent ? '' : (mail.error || 'E-mail известувањето не е испратено.');
     }
 
-    return Response.json({ success: true, message: 'Пораката е успешно испратена.' });
+
+    return Response.json({ success: true, emailSent, warning: emailExpected && !emailSent ? (emailError || 'Пораката е зачувана, но e-mail известувањето не е испратено.') : '' });
   } catch (err) {
     return Response.json({ success: false, error: err.message || 'Грешка при испраќање.' }, { status: 500 });
   }
