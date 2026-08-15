@@ -17,62 +17,56 @@ export async function sendNotificationEmail(env, { to, subject, text, fields = [
   const recipient = String(to || '').trim();
   if (!recipient) return { sent: false, provider: 'none', error: 'Нема внесено e-mail за известувања.' };
 
-  // Preferred provider: Cloudflare Email Sending API.
-  // Configure these as production secrets/variables in Cloudflare Pages:
-  // CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_EMAIL_API_TOKEN, MAIL_FROM
-  const accountId = String(env.CLOUDFLARE_ACCOUNT_ID || '').trim();
-  const apiToken = String(env.CLOUDFLARE_EMAIL_API_TOKEN || '').trim();
-  const from = String(env.MAIL_FROM || '').trim();
+  const apiKey = String(env.RESEND_API_KEY || '').trim();
+  const from = String(env.RESEND_FROM || '').trim();
 
-  if (accountId && apiToken && from) {
-    try {
-      const html = `<div style="font-family:Arial,sans-serif"><h2>${esc(subject)}</h2><table style="border-collapse:collapse;width:100%;max-width:760px">${rowsHtml(fields)}</table></div>`;
-      const payload = { from, to: [recipient], subject, text, html };
-      if (replyTo) payload.reply_to = [replyTo];
-      const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/email/sending/send`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json().catch(() => ({}));
-      if (response.ok && data?.success) {
-        return { sent: true, provider: 'cloudflare', messageId: data?.result?.message_id || '' };
-      }
-      const apiError = data?.errors?.map(e => e.message).join('; ') || `HTTP ${response.status}`;
-      return { sent: false, provider: 'cloudflare', error: apiError };
-    } catch (err) {
-      return { sent: false, provider: 'cloudflare', error: err.message || 'Грешка при Cloudflare Email Sending.' };
-    }
+  if (!apiKey || !from) {
+    return {
+      sent: false,
+      provider: 'resend',
+      status: 500,
+      error: 'Resend не е конфигуриран: недостасува RESEND_API_KEY или RESEND_FROM.'
+    };
   }
 
-  // Compatibility fallback for the existing project setup.
-  // FormSubmit requires the destination address to be activated once.
   try {
-    const response = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipient)}`, {
+    const html = `<div style="font-family:Arial,sans-serif"><h2>${esc(subject)}</h2><table style="border-collapse:collapse;width:100%;max-width:760px">${rowsHtml(fields)}</table></div>`;
+    const payload = { from, to: [recipient], subject, text, html };
+    if (replyTo) payload.reply_to = [replyTo];
+
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        ...Object.fromEntries(fields.map(([label, value]) => [label, value])),
-        message: text,
-        _subject: subject,
-        _template: 'table',
-        _captcha: 'false',
-        ...(replyTo ? { _replyto: replyTo } : {})
-      })
+      body: JSON.stringify(payload)
     });
-    const data = await response.json().catch(() => ({}));
-    if (response.ok && (data.success === true || data.success === 'true')) {
-      return { sent: true, provider: 'formsubmit' };
+
+    const responseText = await response.text();
+    let data = {};
+    try { data = responseText ? JSON.parse(responseText) : {}; } catch (_) {}
+
+    if (response.ok && data?.id) {
+      return { sent: true, provider: 'resend', status: response.status, messageId: data.id };
     }
-    const error = data?.message || data?.error || `HTTP ${response.status}`;
-    return { sent: false, provider: 'formsubmit', error: String(error) };
+
+    const apiError = data?.message || data?.name || data?.error || responseText || `HTTP ${response.status}`;
+    return {
+      sent: false,
+      provider: 'resend',
+      status: response.status,
+      error: String(apiError),
+      retryAfter: response.headers.get('retry-after'),
+      rateLimitRemaining: response.headers.get('ratelimit-remaining'),
+      rateLimitReset: response.headers.get('ratelimit-reset')
+    };
   } catch (err) {
-    return { sent: false, provider: 'formsubmit', error: err.message || 'Грешка при e-mail сервисот.' };
+    return {
+      sent: false,
+      provider: 'resend',
+      status: 0,
+      error: err?.message || 'Грешка при Resend e-mail сервисот.'
+    };
   }
 }

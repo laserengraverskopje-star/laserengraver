@@ -34,3 +34,20 @@ async function save(){
  }catch(e){show('err',e.message);}finally{saveBtn.disabled=false;}
 }
 saveBtn.addEventListener('click',save);load();
+
+const testEmailBtn=document.getElementById('testEmailBtn');
+const emailTestStatus=document.getElementById('emailTestStatus');
+if(testEmailBtn){
+  testEmailBtn.addEventListener('click',async()=>{
+    testEmailBtn.disabled=true;
+    emailTestStatus.textContent='Се испраќа...';
+    try{
+      const r=await fetch('/api/email-test',{method:'POST',headers:{'Authorization':`Bearer ${tok()}`,'Content-Type':'application/json'}});
+      const d=await r.json();
+      if(r.status===401){location.href='login.html';return;}
+      if(!r.ok||!d.success) throw new Error(d.error||`E-mail тестот не успеа (HTTP ${r.status}).`);
+      emailTestStatus.textContent=`✓ Испратено преку ${d.provider||'e-mail сервис'}${d.messageId?' • '+d.messageId:''}`;
+    }catch(e){emailTestStatus.textContent='✕ '+(e.message||'Грешка при тестирање.');}
+    finally{testEmailBtn.disabled=false;}
+  });
+}

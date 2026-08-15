@@ -77,7 +77,7 @@ export async function onRequestPost(context) {
       emailError = mail.sent ? '' : (mail.error || 'E-mail известувањето не е испратено.');
     }
 
-    return Response.json({ success: true, emailSent, warning: emailExpected && !emailSent ? (emailError || 'Пораката е зачувана, но e-mail известувањето не е испратено.') : '' });
+    return Response.json({ success: true, saved: true, emailExpected, emailSent, warning: emailExpected && !emailSent ? `Пораката е зачувана, но e-mail известувањето не е испратено. ${emailError}` : '' });
   } catch (err) {
     return Response.json({ success: false, error: err.message || 'Грешка при испраќање.' }, { status: 500 });
   }

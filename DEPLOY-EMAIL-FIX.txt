@@ -1,0 +1,13 @@
+LASER ENGRAVER – EMAIL FIX
+
+1) Овој ZIP НЕ содржи .dev.vars, .git или node_modules.
+2) На Cloudflare Worker мора да постојат овие Secrets:
+   RESEND_API_KEY = твојот Resend API key
+   RESEND_FROM   = верификуван sender, на пример: Laser Engraver <noreply@laserengraver.mk>
+3) Во Cloudflare Workers & Pages -> laserengraver -> Settings -> Variables and Secrets додади ги како Secret.
+4) Deploy/Publish проектот.
+5) Admin -> Поставки -> „Испрати тест e-mail“.
+6) Ако тестот успее, провери Resend -> Logs.
+7) Дури потоа тестирај „Побарај понуда“.
+
+ВАЖНО: RESEND_FROM мора да биде адреса/домен што Resend го дозволува за твојот проект. Не ставај API key во ZIP или во frontend код.
